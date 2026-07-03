@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+"""voipctl - manage the outbound-only VoIP server.
+
+Everything under /etc/voip is the source of truth. `voipctl apply` validates
+it and regenerates the Asterisk, nftables and fail2ban configuration from it.
+Run `voipctl --help` for the command list, or see /root/README.
+"""
+
+import argparse
+import configparser
+import getpass
+import grp
+import ipaddress
+import os
+import re
+import secrets
+import string
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
