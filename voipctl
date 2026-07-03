@@ -20,3 +20,21 @@ import sys
 import tempfile
 from pathlib import Path
 
+# ---------------------------------------------------------------- locations
+ETC = Path("/etc/voip")
+WHITELIST = ETC / "whitelist.conf"
+TELNYX_RANGES = ETC / "telnyx.conf"
+BLOCKED = ETC / "blocked_prefixes.conf"
+CUSTOMERS = ETC / "customers"
+POOLS = ETC / "cidpools"
+SECRETS = ETC / "secrets"
+TELNYX_CREDS = SECRETS / "telnyx.conf"
+
+AST_ETC = Path("/etc/asterisk")
+OUT_PJSIP_CUST = AST_ETC / "pjsip_customers.conf"
+OUT_PJSIP_TELNYX = AST_ETC / "pjsip_telnyx.conf"
+OUT_EXT = AST_ETC / "extensions_customers.conf"
+OUT_NFT = Path("/etc/nftables.conf")
+OUT_F2B = Path("/etc/fail2ban/jail.d/voip.local")
+POOL_OUT = Path("/var/lib/asterisk/cidpools")
+
