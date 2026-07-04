@@ -83,3 +83,22 @@ def asterisk_gid():
         return 0
 
 
+def write_file(path, content, mode=0o640, gid=0):
+    """Atomically write `content`; return True if the file changed."""
+    path = Path(path)
+    old = path.read_text() if path.exists() else None
+    changed = old != content
+    if changed:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=f".{path.name}.")
+        with os.fdopen(fd, "w") as fh:
+            fh.write(content)
+        os.chmod(tmp, mode)
+        os.chown(tmp, 0, gid)
+        os.replace(tmp, path)
+    else:
+        os.chmod(path, mode)
+        os.chown(path, 0, gid)
+    return changed
+
+
