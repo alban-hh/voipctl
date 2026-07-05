@@ -169,3 +169,22 @@ def load_telnyx_ranges():
         fields = raw.partition("#")[0].split()
         if not fields:
             continue
+        if len(fields) != 2 or fields[0] not in ("host", "signaling", "media"):
+            raise Fail(f"{TELNYX_RANGES}:{num}: expected 'host|signaling|media <value>'")
+        if fields[0] == "host":
+            host, _, port = fields[1].partition(":")
+            if not re.match(r"^[A-Za-z0-9.-]+$", host):
+                raise Fail(f"{TELNYX_RANGES}:{num}: bad host")
+            data["host"], data["port"] = host, int(port or 5060)
+        else:
+            try:
+                data[fields[0]].append(parse_net(fields[1]))
+            except Fail as exc:
+                raise Fail(f"{TELNYX_RANGES}:{num}: {exc}")
+    for key in ("signaling", "media"):
+        data[key] = list(ipaddress.collapse_addresses(data[key]))
+        if not data[key]:
+            raise Fail(f"{TELNYX_RANGES}: no '{key}' entries")
+    return data
+
+
