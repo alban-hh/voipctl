@@ -128,3 +128,24 @@ def parse_role(text):
         return "customer", name
     raise Fail(f"'{text}': role must be 'admin' or 'customer:<name>'")
 
+
+def load_whitelist():
+    """Return a list of dicts: net, role, customer, label."""
+    entries = []
+    if not WHITELIST.exists():
+        return entries
+    for num, raw in enumerate(WHITELIST.read_text().splitlines(), 1):
+        body, _, label = raw.partition("#")
+        fields = body.split()
+        if not fields:
+            continue
+        if len(fields) != 2:
+            raise Fail(f"{WHITELIST}:{num}: expected '<ip-or-cidr> <role>  # label', got: {raw.strip()}")
+        try:
+            net = parse_net(fields[0])
+            role, customer = parse_role(fields[1])
+        except Fail as exc:
+            raise Fail(f"{WHITELIST}:{num}: {exc}")
+        entries.append({"net": net, "role": role, "customer": customer, "label": label.strip()})
+    return entries
+
