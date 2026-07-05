@@ -102,3 +102,29 @@ def write_file(path, content, mode=0o640, gid=0):
     return changed
 
 
+# ---------------------------------------------------------------- whitelist
+def parse_net(text):
+    try:
+        net = ipaddress.ip_network(text, strict=False)
+    except ValueError:
+        raise Fail(f"'{text}' is not a valid IP address or CIDR range")
+    if net.version != 4:
+        raise Fail(f"'{text}': IPv6 is disabled on this server, IPv4 only")
+    if net.prefixlen < MIN_PREFIXLEN:
+        raise Fail(f"'{text}': range too wide (/{net.prefixlen}); "
+                   f"the smallest allowed prefix is /{MIN_PREFIXLEN}")
+    if net.is_loopback or net.is_multicast or net.is_unspecified:
+        raise Fail(f"'{text}': not a usable source address")
+    return net
+
+
+def parse_role(text):
+    if text == "admin":
+        return "admin", None
+    if text.startswith("customer:"):
+        name = text.split(":", 1)[1]
+        if not RE_CUSTOMER.match(name):
+            raise Fail(f"'{text}': bad customer name")
+        return "customer", name
+    raise Fail(f"'{text}': role must be 'admin' or 'customer:<name>'")
+
