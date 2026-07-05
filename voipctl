@@ -188,3 +188,26 @@ def load_telnyx_ranges():
     return data
 
 
+def load_telnyx_creds():
+    if not TELNYX_CREDS.exists():
+        return None
+    cp = configparser.ConfigParser(interpolation=None)
+    cp.read(TELNYX_CREDS)
+    user = cp.get("telnyx", "username", fallback="").strip()
+    password = cp.get("telnyx", "password", fallback="").strip()
+    if not user or not password:
+        return None
+    return user, password
+
+
+def ast_escape(value):
+    """Escape a value for an Asterisk .conf file (';' starts a comment)."""
+    if "\n" in value or "\r" in value:
+        raise Fail("credentials must not contain line breaks")
+    return value.replace(";", "\\;")
+
+
+# ---------------------------------------------------------------- customers
+def customer_path(name):
+    return CUSTOMERS / f"{name}.conf"
+
