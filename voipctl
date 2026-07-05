@@ -149,3 +149,23 @@ def load_whitelist():
         entries.append({"net": net, "role": role, "customer": customer, "label": label.strip()})
     return entries
 
+
+def nets_for(entries, role, customer=None):
+    nets = [e["net"] for e in entries
+            if e["role"] == role and (customer is None or e["customer"] == customer)]
+    return list(ipaddress.collapse_addresses(nets))
+
+
+def fmt_net(net):
+    return str(net.network_address) if net.prefixlen == 32 else str(net)
+
+
+# ---------------------------------------------------------------- telnyx
+def load_telnyx_ranges():
+    data = {"host": "sip.telnyx.com", "port": 5060, "signaling": [], "media": []}
+    if not TELNYX_RANGES.exists():
+        raise Fail(f"{TELNYX_RANGES} is missing")
+    for num, raw in enumerate(TELNYX_RANGES.read_text().splitlines(), 1):
+        fields = raw.partition("#")[0].split()
+        if not fields:
+            continue
