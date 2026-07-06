@@ -233,3 +233,24 @@ def load_customer(name):
     if default_country and not re.match(r"^[1-9][0-9]{0,3}$", default_country):
         raise Fail(f"{path}: default_country must be a country code such as 355")
     prefixes = cp.get("customer", "allowed_prefixes", fallback="").replace(",", " ").split()
+    prefixes = [p.lstrip("+") for p in prefixes]
+    for p in prefixes:
+        if not RE_PREFIX.match(p):
+            raise Fail(f"{path}: allowed prefix '{p}' must be digits of an international number, e.g. 1 or 44 or 3556")
+    exts = {}
+    for section in cp.sections():
+        if section == "customer":
+            continue
+        m = re.match(r"^ext\s+(\S+)$", section)
+        if not m or not RE_EXT.match(m.group(1)):
+            raise Fail(f"{path}: bad section [{section}], expected [ext <digits>]")
+        ext = m.group(1)
+        password = cp.get(section, "password", fallback="")
+        cid = cp.get(section, "cid", fallback="").strip()
+        if len(password) < 16:
+            raise Fail(f"{path}: [{section}] password is missing or shorter than 16 characters")
+        cid2 = cp.get(section, "cid2", fallback="").strip()
+        for key, value in (("cid", cid), ("cid2", cid2)):
+            if key == "cid2" and not value:
+                continue
+            if value.startswith("pool:"):
