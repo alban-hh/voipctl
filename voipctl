@@ -211,3 +211,25 @@ def ast_escape(value):
 def customer_path(name):
     return CUSTOMERS / f"{name}.conf"
 
+
+def load_customer(name):
+    path = customer_path(name)
+    if not path.exists():
+        raise Fail(f"no such customer: {name}")
+    cp = configparser.ConfigParser(interpolation=None)
+    cp.read(path)
+    if not cp.has_section("customer"):
+        raise Fail(f"{path}: missing [customer] section")
+    try:
+        max_calls = cp.getint("customer", "max_calls", fallback=DEFAULT_MAX_CALLS)
+        max_seconds = cp.getint("customer", "max_call_seconds", fallback=DEFAULT_MAX_SECONDS)
+    except ValueError:
+        raise Fail(f"{path}: max_calls and max_call_seconds must be whole numbers")
+    if not 1 <= max_calls <= 1000:
+        raise Fail(f"{path}: max_calls must be between 1 and 1000")
+    if not 30 <= max_seconds <= 86400:
+        raise Fail(f"{path}: max_call_seconds must be between 30 and 86400")
+    default_country = cp.get("customer", "default_country", fallback="").strip().lstrip("+")
+    if default_country and not re.match(r"^[1-9][0-9]{0,3}$", default_country):
+        raise Fail(f"{path}: default_country must be a country code such as 355")
+    prefixes = cp.get("customer", "allowed_prefixes", fallback="").replace(",", " ").split()
