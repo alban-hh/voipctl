@@ -296,3 +296,24 @@ def new_password(length=32):
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
+# ---------------------------------------------------------------- CID pools
+def load_pool(name):
+    """Return the valid numbers in a pool file (comments/blank lines ignored)."""
+    path = POOLS / f"{name}.txt"
+    if not path.exists():
+        raise Fail(f"no such caller ID pool: {name} (expected {path})")
+    numbers, bad = [], []
+    for raw in path.read_text().splitlines():
+        value = raw.partition("#")[0].strip().replace(" ", "")
+        if not value:
+            continue
+        (numbers if RE_E164.match(value) else bad).append(value)
+    return numbers, bad
+
+
+def list_pools():
+    if not POOLS.exists():
+        return []
+    return sorted(p.stem for p in POOLS.glob("*.txt") if RE_POOL.match(p.stem))
+
+
