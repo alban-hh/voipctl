@@ -254,3 +254,22 @@ def load_customer(name):
             if key == "cid2" and not value:
                 continue
             if value.startswith("pool:"):
+                if not RE_POOL.match(value[5:]):
+                    raise Fail(f"{path}: [{section}] bad pool name in {key}")
+            elif not RE_E164.match(value):
+                raise Fail(f"{path}: [{section}] {key} must be +<number> or pool:<name>")
+        exts[ext] = {"password": password, "cid": cid, "cid2": cid2}
+    return {"name": name, "max_calls": max_calls, "max_seconds": max_seconds,
+            "prefixes": sorted(set(prefixes)), "default_country": default_country, "exts": exts}
+
+
+def list_customers():
+    if not CUSTOMERS.exists():
+        return []
+    names = sorted(p.stem for p in CUSTOMERS.glob("*.conf"))
+    for n in names:
+        if not RE_CUSTOMER.match(n):
+            raise Fail(f"{CUSTOMERS}/{n}.conf: bad customer file name")
+    return names
+
+
