@@ -273,3 +273,26 @@ def list_customers():
     return names
 
 
+def save_customer(cust):
+    lines = [f"# Customer '{cust['name']}'. Edit, then run: voipctl apply",
+             "[customer]",
+             f"max_calls = {cust['max_calls']}",
+             f"max_call_seconds = {cust['max_seconds']}",
+             f"allowed_prefixes = {' '.join(cust['prefixes'])}"]
+    if cust.get("default_country"):
+        lines.append(f"default_country = {cust['default_country']}")
+    lines.append("")
+    for ext in sorted(cust["exts"]):
+        e = cust["exts"][ext]
+        lines += [f"[ext {ext}]", f"password = {e['password']}", f"cid = {e['cid']}"]
+        if e.get("cid2"):
+            lines.append(f"cid2 = {e['cid2']}")
+        lines.append("")
+    write_file(customer_path(cust["name"]), "\n".join(lines), mode=0o600)
+
+
+def new_password(length=32):
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
