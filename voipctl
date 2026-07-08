@@ -360,3 +360,25 @@ def render_pjsip_telnyx(tel, creds):
     if not creds:
         out += ["; Telnyx credentials are not set yet. Run: voipctl telnyx set-creds", ""]
         return "\n".join(out)
+    user, password = creds
+    out += [
+        "[telnyx]",
+        "type=endpoint",
+        "transport=transport-udp",
+        "context=from-telnyx",
+        "disallow=all",
+        "allow=ulaw,alaw",
+        "outbound_auth=telnyx-auth",
+        "aors=telnyx",
+        f"from_domain={tel['host']}",
+        "direct_media=no",
+        "dtmf_mode=rfc4733",
+        "allow_transfer=no",
+        "allow_subscribe=no",
+        "trust_id_inbound=no",
+        "send_pai=no",
+        "send_rpid=no",
+        "",
+        "[telnyx-auth]",
+        "type=auth",
+        "auth_type=userpass",
