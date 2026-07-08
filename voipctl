@@ -317,3 +317,25 @@ def list_pools():
     return sorted(p.stem for p in POOLS.glob("*.txt") if RE_POOL.match(p.stem))
 
 
+def sync_pools(quiet=False):
+    """Compile /etc/voip/cidpools/*.txt into the clean lists Asterisk reads."""
+    gid = asterisk_gid()
+    POOL_OUT.mkdir(parents=True, exist_ok=True)
+    os.chmod(POOL_OUT, 0o750)
+    os.chown(POOL_OUT, 0, gid)
+    wanted = set()
+    for name in list_pools():
+        numbers, bad = load_pool(name)
+        for b in bad:
+            warn(f"pool {name}: ignoring invalid number '{b}' (use +<countrycode><number>)")
+        if not numbers:
+            warn(f"pool {name}: no valid numbers - calls using it will be rejected")
+        target = POOL_OUT / f"{name}.list"
+        wanted.add(target.name)
+        write_file(target, "".join(n + "\n" for n in numbers), mode=0o640, gid=gid)
+        if not quiet:
+            print(f"pool {name}: {len(numbers)} number(s)")
+    for stale in POOL_OUT.glob("*.list"):
+        if stale.name not in wanted:
+            stale.unlink()
+
