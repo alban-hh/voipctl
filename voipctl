@@ -339,3 +339,24 @@ def sync_pools(quiet=False):
         if stale.name not in wanted:
             stale.unlink()
 
+
+# ---------------------------------------------------------------- blocked prefixes
+def load_blocked():
+    prefixes = []
+    if BLOCKED.exists():
+        for num, raw in enumerate(BLOCKED.read_text().splitlines(), 1):
+            value = raw.partition("#")[0].strip().lstrip("+")
+            if not value:
+                continue
+            if not RE_PREFIX.match(value):
+                raise Fail(f"{BLOCKED}:{num}: '{value}' is not a digit prefix")
+            prefixes.append(value)
+    return sorted(set(prefixes))
+
+
+# ---------------------------------------------------------------- rendering
+def render_pjsip_telnyx(tel, creds):
+    out = [f"; {GENERATED}", ""]
+    if not creds:
+        out += ["; Telnyx credentials are not set yet. Run: voipctl telnyx set-creds", ""]
+        return "\n".join(out)
