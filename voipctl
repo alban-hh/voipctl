@@ -531,3 +531,24 @@ def render_extensions(customers, blocked):
             " same => n,Set(VOIP_CID_MODE=${VOIP_CID2_MODE})",
             " same => n,Set(VOIP_CID_VALUE=${VOIP_CID2_VALUE})",
             f" same => n,Goto(cust-{n},${{FILTER(+0-9,${{EXTEN:2}})}},1)",
+            " same => n(nocid2),Set(CDR(userfield)=REJECTED:no-second-caller-id)",
+            " same => n,Hangup(21)",
+            "",
+        ]
+    return "\n".join(out) + "\n"
+
+
+def render_nft():
+    rtp = f"{RTP_START}-{RTP_END}"
+    return "\n".join([
+        "#!/usr/sbin/nft -f",
+        f"# {GENERATED}",
+        "#",
+        "# Port filter only. WHO may connect is decided by the Hetzner Cloud Firewall,",
+        "# which is the single IP whitelist. This layer guarantees that nothing except",
+        "# SSH, SIP and RTP is ever reachable on this host, whatever else gets installed.",
+        "",
+        f"table inet {NFT_TABLE}",
+        f"delete table inet {NFT_TABLE}",
+        f"table inet {NFT_TABLE} {{",
+        "    chain input {",
