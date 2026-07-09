@@ -446,3 +446,22 @@ def render_pjsip_customers(customers, whitelist):
                 out += [f"permit={n.network_address}/{n.netmask}" for n in nets]
             out += [
                 "",
+                f"[{name}]",
+                "type=auth",
+                "auth_type=userpass",
+                f"username={name}",
+                f"password={e['password']}",
+                "",
+                f"[{name}]",
+                "type=aor",
+                "max_contacts=1",
+                "remove_existing=yes",
+                "minimum_expiration=60",
+                "default_expiration=300",
+                "maximum_expiration=3600",
+                "qualify_frequency=0",
+                "",
+            ]
+    return "\n".join(out) + "\n"
+
+
