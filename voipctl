@@ -465,3 +465,26 @@ def render_pjsip_customers(customers, whitelist):
     return "\n".join(out) + "\n"
 
 
+def render_extensions(customers, blocked):
+    out = [f"; {GENERATED}", ""]
+    out += ["; Prefixes nobody may call, whatever their allowed list says.", "[voip-blocked]"]
+    out += [f"exten => _+{p}.,1,NoOp(blocked prefix)" for p in blocked]
+    out.append("")
+    for cust in customers:
+        n = cust["name"]
+        out += [f"; Destinations customer '{n}' may call.", f"[dest-{n}]"]
+        out += [f"exten => _+{p}.,1,NoOp(allowed prefix)" for p in cust["prefixes"]]
+        out += [
+            "",
+            f"[cust-{n}]",
+            f"exten => _[+0-9].,1,NoOp({n}/${{VOIP_EXT}} from ${{CHANNEL(pjsip,remote_addr)}} dialed ${{EXTEN}})",
+            " same => n,Set(CDR(customer_ext)=${VOIP_EXT})",
+            " same => n,Set(CDR(src_ip)=${CHANNEL(pjsip,remote_addr)})",
+            "; --- normalise to +E.164; anything that is not purely + and digits is refused",
+            " same => n,Set(RAW=${FILTER(+0-9,${EXTEN})})",
+            ' same => n,GotoIf($["${RAW}" != "${EXTEN}"]?invalid)',
+            " same => n,Set(NUM=${RAW})",
+            ' same => n,ExecIf($["${RAW:0:1}" = "+"]?Set(NUM=${RAW:1}))',
+            ' same => n,ExecIf($["${RAW:0:2}" = "00"]?Set(NUM=${RAW:2}))',
+        ] + ([
+            "; national format: one leading 0 means the customer's default country",
