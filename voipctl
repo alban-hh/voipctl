@@ -424,3 +424,25 @@ def render_pjsip_customers(customers, whitelist):
                 "identify_by=username,auth_username",
                 "direct_media=no",
                 "rtp_symmetric=yes",
+                "force_rport=yes",
+                "rewrite_contact=yes",
+                "dtmf_mode=rfc4733",
+                "allow_transfer=no",
+                "allow_subscribe=no",
+                "trust_id_inbound=no",
+                "send_pai=no",
+                "send_rpid=no",
+                "ice_support=no",
+                f"set_var=VOIP_EXT={ext}",
+                f"set_var=VOIP_CID_MODE={mode}",
+                f"set_var=VOIP_CID_VALUE={value}",
+            ]
+            if e.get("cid2"):
+                m2, v2 = ("pool", e["cid2"][5:]) if e["cid2"].startswith("pool:") else ("fixed", e["cid2"])
+                out += [f"set_var=VOIP_CID2_MODE={m2}", f"set_var=VOIP_CID2_VALUE={v2}"]
+            if nets:
+                out += ["; optional source lock: only these addresses may use the endpoint",
+                        "deny=0.0.0.0/0.0.0.0"]
+                out += [f"permit={n.network_address}/{n.netmask}" for n in nets]
+            out += [
+                "",
