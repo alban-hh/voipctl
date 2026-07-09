@@ -401,3 +401,26 @@ def render_pjsip_telnyx(tel, creds):
     return "\n".join(out)
 
 
+def render_pjsip_customers(customers, whitelist):
+    out = [f"; {GENERATED}", ""]
+    for cust in customers:
+        nets = nets_for(whitelist, "customer", cust["name"])
+        out.append(f";;;;;;;; customer {cust['name']}: {len(cust['exts'])} extension(s), "
+                   f"source lock: {len(nets) or 'none (Hetzner firewall only)'}")
+        for ext in sorted(cust["exts"]):
+            e = cust["exts"][ext]
+            name = ext
+            mode, value = ("pool", e["cid"][5:]) if e["cid"].startswith("pool:") else ("fixed", e["cid"])
+            out += [
+                f"[{name}]",
+                "type=endpoint",
+                "transport=transport-udp",
+                f"context=cust-{cust['name']}",
+                f"accountcode={cust['name']}",
+                "disallow=all",
+                "allow=ulaw,alaw",
+                f"auth={name}",
+                f"aors={name}",
+                "identify_by=username,auth_username",
+                "direct_media=no",
+                "rtp_symmetric=yes",
