@@ -576,3 +576,22 @@ def render_nft():
         "",
     ])
 
+
+def render_f2b(whitelist, tel):
+    ignore = ["127.0.0.1/8"] + [fmt_net(n) for n in nets_for(whitelist, "admin")]
+    ignore += [fmt_net(n) for n in tel["signaling"]]
+    return "\n".join([
+        f"# {GENERATED}",
+        "[DEFAULT]",
+        "# Admin and Telnyx addresses are never banned.",
+        "ignoreip = " + " ".join(ignore),
+        "# A ban drops every packet from the address, all protocols (SIP is UDP).",
+        "banaction = nftables",
+        "banaction_allports = nftables",
+        "",
+        "[sshd]",
+        "enabled  = true",
+        "action   = nftables[type=custom, blocktype=drop]",
+        "maxretry = 3",
+        "findtime = 10m",
+        "bantime  = 1h",
