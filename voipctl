@@ -617,3 +617,24 @@ def render_f2b(whitelist, tel):
         "",
     ])
 
+
+# ---------------------------------------------------------------- apply
+def build():
+    whitelist = load_whitelist()
+    tel = load_telnyx_ranges()
+    blocked = load_blocked()
+    customers = [load_customer(n) for n in list_customers()]
+    names = {c["name"] for c in customers}
+    pools = set(list_pools())
+    for e in whitelist:
+        if e["role"] == "customer" and e["customer"] not in names:
+            raise Fail(f"{WHITELIST}: '{fmt_net(e['net'])}' is assigned to customer "
+                       f"'{e['customer']}', which does not exist")
+    owner = {}
+    for c in customers:
+        for ext in c["exts"]:
+            if ext in owner:
+                raise Fail(f"extension {ext} exists in both '{owner[ext]}' and '{c['name']}': "
+                           "extension numbers are the SIP usernames and must be unique")
+            owner[ext] = c["name"]
+    for c in customers:
