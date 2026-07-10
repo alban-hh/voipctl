@@ -638,3 +638,24 @@ def build():
                            "extension numbers are the SIP usernames and must be unique")
             owner[ext] = c["name"]
     for c in customers:
+        if not c["prefixes"]:
+            warn(f"customer {c['name']} has no allowed prefixes: every call will be rejected")
+        for ext, e in c["exts"].items():
+            for value in (e["cid"], e.get("cid2", "")):
+                if value.startswith("pool:") and value[5:] not in pools:
+                    raise Fail(f"customer {c['name']} ext {ext}: caller ID pool '{value[5:]}' does not exist")
+    return {
+        "whitelist": whitelist, "tel": tel, "customers": customers,
+        "files": {
+            OUT_PJSIP_TELNYX: render_pjsip_telnyx(tel, load_telnyx_creds()),
+            OUT_PJSIP_CUST: render_pjsip_customers(customers, whitelist),
+            OUT_EXT: render_extensions(customers, blocked),
+            OUT_NFT: render_nft(),
+            OUT_F2B: render_f2b(whitelist, tel),
+        },
+    }
+
+
+def service_active(name):
+    return run(["systemctl", "is-active", "--quiet", name], check=False, capture=False).returncode == 0
+
