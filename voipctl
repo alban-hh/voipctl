@@ -675,3 +675,30 @@ def cmd_apply(args):
         print("configuration is valid; nothing was changed (--check)")
         return
 
+    gid = asterisk_gid()
+    changed = {
+        "telnyx": write_file(OUT_PJSIP_TELNYX, files[OUT_PJSIP_TELNYX], 0o640, gid),
+        "pjsip": write_file(OUT_PJSIP_CUST, files[OUT_PJSIP_CUST], 0o640, gid),
+        "dialplan": write_file(OUT_EXT, files[OUT_EXT], 0o640, gid),
+        "nft": write_file(OUT_NFT, files[OUT_NFT], 0o700),
+        "f2b": write_file(OUT_F2B, files[OUT_F2B], 0o644),
+    }
+    sync_pools(quiet=True)
+
+    if args.no_firewall:
+        print("firewall: rules written to /etc/nftables.conf but NOT loaded (--no-firewall)")
+    else:
+        run(["nft", "-f", str(OUT_NFT)])
+        run(["systemctl", "enable", "--quiet", "nftables"], check=False)
+        print("firewall: loaded (ports only; IP whitelist is the Hetzner firewall)")
+
+    if service_active("asterisk"):
+        run(["asterisk", "-rx", "core reload"])
+        print("asterisk: reloaded")
+    else:
+        print("asterisk: not running, configuration written only")
+
+    if changed["f2b"] and service_active("fail2ban"):
+        run(["systemctl", "restart", "fail2ban"], check=False)
+        print("fail2ban: restarted")
+
