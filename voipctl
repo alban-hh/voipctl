@@ -659,3 +659,19 @@ def build():
 def service_active(name):
     return run(["systemctl", "is-active", "--quiet", name], check=False, capture=False).returncode == 0
 
+
+def cmd_apply(args):
+    state = build()
+    files = state["files"]
+
+    with tempfile.NamedTemporaryFile("w", suffix=".nft", delete=False) as tmp:
+        tmp.write(files[OUT_NFT])
+    try:
+        run(["nft", "-c", "-f", tmp.name])
+    finally:
+        os.unlink(tmp.name)
+
+    if args.check:
+        print("configuration is valid; nothing was changed (--check)")
+        return
+
