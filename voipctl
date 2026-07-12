@@ -702,3 +702,24 @@ def cmd_apply(args):
         run(["systemctl", "restart", "fail2ban"], check=False)
         print("fail2ban: restarted")
 
+    exts = sum(len(c["exts"]) for c in state["customers"])
+    print(f"applied: {len(state['customers'])} customer(s), {exts} extension(s)")
+
+
+def apply_now():
+    cmd_apply(argparse.Namespace(check=False, no_firewall=False))
+
+
+# ---------------------------------------------------------------- commands
+def cmd_whitelist(args):
+    if args.action == "list":
+        entries = load_whitelist()
+        for e in entries:
+            role = "admin" if e["role"] == "admin" else f"customer:{e['customer']}"
+            print(f"{fmt_net(e['net']):<20} {role:<28} {e['label']}")
+        if not entries:
+            print("(whitelist is empty)")
+        return
+    net = parse_net(args.ip)
+    if args.action == "add":
+        role, customer = parse_role(args.role)
