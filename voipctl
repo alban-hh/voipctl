@@ -744,3 +744,25 @@ def cmd_whitelist(args):
                     match = False
             if match:
                 removed += 1
+            else:
+                kept.append(raw)
+        if not removed:
+            raise Fail(f"{fmt_net(net)} is not in the whitelist" + (f" as {args.role}" if args.role else ""))
+        backup = WHITELIST.read_text()
+        write_file(WHITELIST, "\n".join(kept) + "\n", mode=0o600)
+        try:
+            build()
+            apply_now()
+        except Fail:
+            write_file(WHITELIST, backup, mode=0o600)
+            raise
+        print(f"removed {fmt_net(net)} ({removed} line(s))")
+        return
+    try:
+        apply_now()
+    except Fail:
+        lines = WHITELIST.read_text().splitlines()[:-1]
+        write_file(WHITELIST, "\n".join(lines) + "\n", mode=0o600)
+        raise
+
+
