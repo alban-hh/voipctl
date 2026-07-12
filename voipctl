@@ -723,3 +723,24 @@ def cmd_whitelist(args):
     net = parse_net(args.ip)
     if args.action == "add":
         role, customer = parse_role(args.role)
+        if role == "customer" and customer not in list_customers():
+            raise Fail(f"customer '{customer}' does not exist; create it first: voipctl customer add {customer}")
+        for e in load_whitelist():
+            if e["net"] == net and e["role"] == role and e["customer"] == customer:
+                raise Fail(f"{fmt_net(net)} is already whitelisted as {args.role}")
+        label = " ".join(args.label).replace("#", "").strip()
+        with open(WHITELIST, "a") as fh:
+            fh.write(f"{fmt_net(net):<20} {args.role:<24} # {label}\n")
+        print(f"added {fmt_net(net)} as {args.role}")
+    else:
+        kept, removed = [], 0
+        for raw in WHITELIST.read_text().splitlines():
+            fields = raw.partition("#")[0].split()
+            match = False
+            if len(fields) == 2:
+                try:
+                    match = parse_net(fields[0]) == net and (args.role is None or fields[1] == args.role)
+                except Fail:
+                    match = False
+            if match:
+                removed += 1
