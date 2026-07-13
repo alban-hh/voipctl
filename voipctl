@@ -766,3 +766,24 @@ def cmd_whitelist(args):
         raise
 
 
+def cmd_customer(args):
+    if args.action == "list":
+        whitelist = load_whitelist()
+        for name in list_customers():
+            c = load_customer(name)
+            ips = len(nets_for(whitelist, "customer", name))
+            print(f"{name:<20} exts={len(c['exts']):<3} max_calls={c['max_calls']:<4} "
+                  f"max_seconds={c['max_seconds']:<6} ips={ips:<3} allowed=+{' +'.join(c['prefixes']) or '(none)'}")
+        return
+    name = args.name
+    if not RE_CUSTOMER.match(name):
+        raise Fail("customer name: 2-20 characters, lowercase letters and digits, starting with a letter")
+    if args.action == "add":
+        if customer_path(name).exists():
+            raise Fail(f"customer {name} already exists")
+        cust = {"name": name, "max_calls": args.max_calls, "max_seconds": args.max_seconds,
+                "prefixes": [p.lstrip("+") for p in (args.allow or "").replace(",", " ").split()],
+                "default_country": (args.default_country or "").lstrip("+"), "exts": {}}
+        save_customer(cust)
+        load_customer(name)
+        apply_now()
