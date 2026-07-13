@@ -832,3 +832,18 @@ def cmd_customer(args):
         apply_now()
         print(f"customer {name} deleted. Remove its IPs from the Hetzner firewall.")
 
+
+def parse_cid2(args):
+    if args.cid2 and args.pool2:
+        raise Fail("use either --cid2 or --pool2, not both")
+    if args.cid2:
+        if not RE_E164.match(args.cid2):
+            raise Fail("--cid2 must be a full international number, e.g. +14155550100")
+        return args.cid2
+    if args.pool2:
+        if args.pool2 not in list_pools():
+            raise Fail(f"caller ID pool '{args.pool2}' does not exist")
+        return f"pool:{args.pool2}"
+    return None
+
+
