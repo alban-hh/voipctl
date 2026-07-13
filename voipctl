@@ -787,3 +787,24 @@ def cmd_customer(args):
         save_customer(cust)
         load_customer(name)
         apply_now()
+        print(f"customer {name} created. Next: voipctl ext add {name} <ext> --cid +<number> "
+              f"(and allow the customer's IP in the Hetzner firewall)")
+    elif args.action == "set":
+        cust = load_customer(name)
+        if args.max_calls is not None:
+            cust["max_calls"] = args.max_calls
+        if args.max_seconds is not None:
+            cust["max_seconds"] = args.max_seconds
+        if args.allow is not None:
+            cust["prefixes"] = [p.lstrip("+") for p in args.allow.replace(",", " ").split()]
+        if args.default_country is not None:
+            cust["default_country"] = args.default_country.lstrip("+")
+        backup = customer_path(name).read_text()
+        save_customer(cust)
+        try:
+            load_customer(name)
+            apply_now()
+        except Fail:
+            write_file(customer_path(name), backup, mode=0o600)
+            raise
+    elif args.action == "show":
