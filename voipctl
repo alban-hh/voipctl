@@ -808,3 +808,27 @@ def cmd_customer(args):
             write_file(customer_path(name), backup, mode=0o600)
             raise
     elif args.action == "show":
+        c = load_customer(name)
+        print(f"customer:          {name}  (accountcode in CDR: {name})")
+        print(f"max calls:         {c['max_calls']}")
+        print(f"max call seconds:  {c['max_seconds']}")
+        print(f"allowed prefixes:  +{' +'.join(c['prefixes']) or '(none)'}")
+        if c["default_country"]:
+            print(f"national numbers:  a leading 0 means +{c['default_country']}")
+        ips = nets_for(load_whitelist(), "customer", name)
+        print(f"source lock:       {' '.join(fmt_net(n) for n in ips) or 'none (any IP the Hetzner firewall allows)'}")
+        for ext in sorted(c["exts"]):
+            print(f"  ext {ext:<8} sip user {ext:<10} caller ID {c['exts'][ext]['cid']}"
+                  + (f"   | prefix 11 -> {c['exts'][ext]['cid2']}" if c['exts'][ext].get('cid2') else ""))
+    elif args.action == "del":
+        if not args.yes:
+            raise Fail(f"this deletes customer {name}, its extensions and its whitelist entries. "
+                       "Repeat with --yes to confirm.")
+        load_customer(name)
+        kept = [raw for raw in WHITELIST.read_text().splitlines()
+                if raw.partition("#")[0].split()[1:2] != [f"customer:{name}"]]
+        write_file(WHITELIST, "\n".join(kept) + "\n", mode=0o600)
+        customer_path(name).unlink()
+        apply_now()
+        print(f"customer {name} deleted. Remove its IPs from the Hetzner firewall.")
+
