@@ -872,3 +872,25 @@ def cmd_ext(args):
         raise Fail("extension must be 2-8 digits")
     backup = customer_path(name).read_text()
     if args.action == "add":
+        for other in list_customers():
+            if args.ext in load_customer(other)["exts"]:
+                raise Fail(f"extension {args.ext} already exists (customer {other}); "
+                           "extension numbers are the SIP usernames and must be unique")
+        cid = parse_cid(args)
+        if not cid:
+            raise Fail("give the caller ID: --cid +<number> or --pool <name>")
+        cust["exts"][args.ext] = {"password": new_password(), "cid": cid, "cid2": parse_cid2(args) or ""}
+    elif args.action == "set":
+        if args.ext not in cust["exts"]:
+            raise Fail(f"no extension {args.ext} for {name}")
+        cid, cid2 = parse_cid(args), parse_cid2(args)
+        if not cid and not cid2 and not args.no_cid2:
+            raise Fail("give a caller ID: --cid/--pool (first) and/or --cid2/--pool2 (second, dial 11<number>)")
+        if cid:
+            cust["exts"][args.ext]["cid"] = cid
+        if cid2:
+            cust["exts"][args.ext]["cid2"] = cid2
+        if args.no_cid2:
+            cust["exts"][args.ext]["cid2"] = ""
+    elif args.action == "passwd":
+        if args.ext not in cust["exts"]:
