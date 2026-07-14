@@ -847,3 +847,28 @@ def parse_cid2(args):
     return None
 
 
+def parse_cid(args):
+    if args.cid and args.pool:
+        raise Fail("use either --cid or --pool, not both")
+    if args.cid:
+        if not RE_E164.match(args.cid):
+            raise Fail("--cid must be a full international number, e.g. +14155550100")
+        return args.cid
+    if args.pool:
+        if args.pool not in list_pools():
+            raise Fail(f"caller ID pool '{args.pool}' does not exist; create it: voipctl pool add {args.pool} +<number>")
+        return f"pool:{args.pool}"
+    return None
+
+
+def cmd_ext(args):
+    cust = load_customer(args.customer)
+    name = cust["name"]
+    if args.action == "list":
+        for ext in sorted(cust["exts"]):
+            print(f"{ext:<12} caller ID {cust['exts'][ext]['cid']}")
+        return
+    if not RE_EXT.match(args.ext):
+        raise Fail("extension must be 2-8 digits")
+    backup = customer_path(name).read_text()
+    if args.action == "add":
