@@ -894,3 +894,24 @@ def cmd_ext(args):
             cust["exts"][args.ext]["cid2"] = ""
     elif args.action == "passwd":
         if args.ext not in cust["exts"]:
+            raise Fail(f"no extension {args.ext} for {name}")
+        cust["exts"][args.ext]["password"] = new_password()
+    elif args.action == "del":
+        if args.ext not in cust["exts"]:
+            raise Fail(f"no extension {args.ext} for {name}")
+        del cust["exts"][args.ext]
+    elif args.action == "show":
+        if args.ext not in cust["exts"]:
+            raise Fail(f"no extension {args.ext} for {name}")
+        e = cust["exts"][args.ext]
+        tel = load_telnyx_ranges()
+        print(f"SIP server:    this server's public IP, UDP port {SIP_PORT}")
+        print(f"SIP username:  {args.ext}")
+        print(f"SIP password:  {e['password']}")
+        print(f"caller ID:     {e['cid']}")
+        if e.get("cid2"):
+            print(f"2nd caller ID: {e['cid2']}   (dial 11 before the number; 10 = first caller ID)")
+        print(f"codecs:        G.711 u-law / a-law        trunk: {tel['host']}")
+        print("dial format:   +<country><number>, 00<country><number> or <country><number>")
+        return
+    save_customer(cust)
