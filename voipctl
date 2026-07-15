@@ -957,3 +957,21 @@ def cmd_pool(args):
         print(f"pool {args.name}: {len(load_pool(args.name)[0])} number(s)")
     elif args.action == "del":
         if not path.exists():
+            raise Fail(f"no such caller ID pool: {args.name}")
+        if args.numbers:
+            kept = [raw for raw in path.read_text().splitlines()
+                    if raw.partition("#")[0].strip().replace(" ", "") not in args.numbers]
+            write_file(path, "\n".join(kept) + "\n", mode=0o600)
+            sync_pools(quiet=True)
+            print(f"pool {args.name}: {len(load_pool(args.name)[0])} number(s)")
+        else:
+            users = [x for c in list_customers()
+                     for x, e in load_customer(c)["exts"].items()
+                     if f"pool:{args.name}" in (e["cid"], e.get("cid2"))]
+            if users:
+                raise Fail(f"pool {args.name} is still used by: {', '.join(users)}")
+            path.unlink()
+            sync_pools(quiet=True)
+            print(f"pool {args.name} deleted")
+
+
