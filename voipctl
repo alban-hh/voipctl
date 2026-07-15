@@ -936,3 +936,24 @@ def cmd_pool(args):
     if not RE_POOL.match(args.name):
         raise Fail("pool name: lowercase letters, digits, '-' and '_', up to 32 characters")
     path = POOLS / f"{args.name}.txt"
+    if args.action == "show":
+        numbers, bad = load_pool(args.name)
+        print("\n".join(numbers) or "(empty)")
+        for b in bad:
+            warn(f"invalid line ignored: {b}")
+    elif args.action == "add":
+        for n in args.numbers:
+            if not RE_E164.match(n):
+                raise Fail(f"'{n}' is not a full international number like +14155550100")
+        existing = load_pool(args.name)[0] if path.exists() else []
+        if not path.exists():
+            write_file(path, f"# Caller ID pool '{args.name}': one +number per line. "
+                             "Edits take effect within seconds.\n", mode=0o600)
+        with open(path, "a") as fh:
+            for n in args.numbers:
+                if n not in existing:
+                    fh.write(n + "\n")
+        sync_pools(quiet=True)
+        print(f"pool {args.name}: {len(load_pool(args.name)[0])} number(s)")
+    elif args.action == "del":
+        if not path.exists():
