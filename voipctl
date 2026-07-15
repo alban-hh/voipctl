@@ -975,3 +975,28 @@ def cmd_pool(args):
             print(f"pool {args.name} deleted")
 
 
+def cmd_telnyx(args):
+    if args.action == "status":
+        print("credentials: " + ("set" if load_telnyx_creds() else "NOT set (run: voipctl telnyx set-creds)"))
+        if service_active("asterisk"):
+            res = run(["asterisk", "-rx", "pjsip show aor telnyx"], check=False)
+            lines = [l for l in (res.stdout or "").splitlines() if "Contact:" in l and "sip:" in l]
+            print("trunk:       " + (lines[0].split("Contact:")[1].strip() if lines else "not loaded"))
+        return
+    if not sys.stdin.isatty():
+        raise Fail("run this in your own terminal: the credentials are typed at a hidden prompt")
+    print("Telnyx SIP connection credentials (input is hidden and never printed).")
+    user = getpass.getpass("SIP username: ").strip()
+    password = getpass.getpass("SIP password: ").strip()
+    if not user or not password:
+        raise Fail("both values are required; nothing was changed")
+    if getpass.getpass("SIP password again: ").strip() != password:
+        raise Fail("passwords did not match; nothing was changed")
+    for value in (user, password):
+        if any(ch in value for ch in "\r\n"):
+            raise Fail("credentials must not contain line breaks")
+    SECRETS.mkdir(mode=0o700, exist_ok=True)
+    write_file(TELNYX_CREDS, f"[telnyx]\nusername = {user}\npassword = {password}\n", mode=0o600)
+    apply_now()
+    print("Telnyx credentials stored. Check the trunk with: voipctl telnyx status")
+
