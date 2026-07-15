@@ -915,3 +915,24 @@ def cmd_ext(args):
         print("dial format:   +<country><number>, 00<country><number> or <country><number>")
         return
     save_customer(cust)
+    try:
+        apply_now()
+    except Fail:
+        write_file(customer_path(name), backup, mode=0o600)
+        raise
+    if args.action in ("add", "passwd"):
+        print(f"extension {args.ext} ready. Show its SIP login with: voipctl ext show {name} {args.ext}")
+
+
+def cmd_pool(args):
+    if args.action == "list":
+        for name in list_pools():
+            numbers, bad = load_pool(name)
+            print(f"{name:<24} {len(numbers)} number(s)" + (f", {len(bad)} invalid line(s)" if bad else ""))
+        return
+    if args.action == "sync":
+        sync_pools(quiet=args.quiet)
+        return
+    if not RE_POOL.match(args.name):
+        raise Fail("pool name: lowercase letters, digits, '-' and '_', up to 32 characters")
+    path = POOLS / f"{args.name}.txt"
