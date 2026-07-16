@@ -1017,3 +1017,29 @@ def cmd_hetzner(args):
         print(f"    {n}")
 
 
+def cmd_fw(args):
+    if args.action == "show":
+        res = run(["nft", "list", "table", "inet", NFT_TABLE], check=False)
+        print(res.stdout.strip() if res.returncode == 0 else "firewall table is not loaded")
+    elif args.action == "disable":
+        if not args.yes:
+            raise Fail("this removes the in-server firewall until the next 'voipctl apply' or reboot "
+                       "(the Hetzner firewall stays in place). Repeat with --yes to confirm.")
+        run(["nft", "delete", "table", "inet", NFT_TABLE], check=False)
+        print("in-server firewall removed. Restore with: voipctl apply")
+
+
+def cmd_cdr(args):
+    where = []
+    if args.customer:
+        if not RE_CUSTOMER.match(args.customer):
+            raise Fail("bad customer name")
+        where.append(f"accountcode='{args.customer}'")
+    if args.today:
+        where.append("calldate >= CURDATE()")
+    clause = ("WHERE " + " AND ".join(where)) if where else ""
+    if args.summary:
+        sql = (f"SELECT accountcode AS customer, COUNT(*) AS calls, SUM(disposition='ANSWERED') AS answered, "
+               f"SEC_TO_TIME(SUM(billsec)) AS billed, SUM(userfield LIKE 'REJECTED:%') AS rejected "
+               f"FROM cdr {clause} GROUP BY accountcode ORDER BY accountcode")
+    else:
