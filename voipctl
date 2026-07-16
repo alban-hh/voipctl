@@ -1043,3 +1043,24 @@ def cmd_cdr(args):
                f"SEC_TO_TIME(SUM(billsec)) AS billed, SUM(userfield LIKE 'REJECTED:%') AS rejected "
                f"FROM cdr {clause} GROUP BY accountcode ORDER BY accountcode")
     else:
+        sql = (f"SELECT calldate, accountcode AS customer, customer_ext AS ext, src AS callerid, dialed, "
+               f"disposition, billsec, src_ip, userfield FROM cdr {clause} "
+               f"ORDER BY id DESC LIMIT {int(args.limit)}")
+    res = run(["mariadb", "-t", "asteriskcdr", "-e", sql])
+    print(res.stdout.strip() or "(no records)")
+
+
+def cmd_status(args):
+    wl = load_whitelist()
+    print(f"ip access:  managed in the Hetzner firewall ({len(nets_for(wl, 'customer'))} optional source lock(s) here)")
+    names = list_customers()
+    print(f"customers:  {len(names)} ({', '.join(names) or 'none'})")
+    print("telnyx:     credentials " + ("set" if load_telnyx_creds() else "NOT set"))
+    fw = run(["nft", "list", "table", "inet", NFT_TABLE], check=False).returncode == 0
+    print("firewall:   " + ("loaded" if fw else "NOT loaded"))
+    for svc in ("asterisk", "mariadb", "fail2ban", "nftables"):
+        state = run(["systemctl", "is-active", svc], check=False).stdout.strip()
+        print(f"{svc + ':':<11} {state}")
+    if service_active("asterisk"):
+        res = run(["asterisk", "-rx", "core show channels count"], check=False)
+        for line in (res.stdout or "").splitlines():
