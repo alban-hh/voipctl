@@ -1000,3 +1000,20 @@ def cmd_telnyx(args):
     apply_now()
     print("Telnyx credentials stored. Check the trunk with: voipctl telnyx status")
 
+
+def cmd_hetzner(args):
+    tel = load_telnyx_ranges()
+    rtp = f"{RTP_START}-{RTP_END}"
+    print("Hetzner Cloud Firewall - INBOUND rules, IPv4 only. No outbound rules, nothing else.")
+    print("The Hetzner firewall is the only IP whitelist: add and remove IPs there.\n")
+    print(f"Rule 1  SSH   TCP {SSH_PORT}        your own IPs")
+    print(f"Rule 2  SIP   UDP {SIP_PORT}      your own IPs + every client IP")
+    print(f"Rule 3  RTP   UDP {rtp}  your own IPs + every client IP\n")
+    print(f"Rule 4  SIP   UDP {SIP_PORT}      Telnyx signalling:")
+    for n in tel["signaling"]:
+        print(f"    {n}")
+    print(f"\nRule 5  RTP   UDP {rtp}  Telnyx media:")
+    for n in tel["media"]:
+        print(f"    {n}")
+
+
