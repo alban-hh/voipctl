@@ -1064,3 +1064,25 @@ def cmd_status(args):
     if service_active("asterisk"):
         res = run(["asterisk", "-rx", "core show channels count"], check=False)
         for line in (res.stdout or "").splitlines():
+            if "active call" in line:
+                print(f"calls:      {line.strip()}")
+        for name in names:
+            res = run(["asterisk", "-rx", f"group show channels {name}"], check=False)
+            count = sum(1 for l in (res.stdout or "").splitlines() if l.startswith("PJSIP/"))
+            limit = load_customer(name)["max_calls"]
+            print(f"  {name:<18} {count}/{limit} concurrent")
+
+
+# ---------------------------------------------------------------- CLI
+def main():
+    p = argparse.ArgumentParser(prog="voipctl", description="Manage the outbound VoIP server.")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    s = sub.add_parser("apply", help="validate /etc/voip and regenerate + reload everything")
+    s.add_argument("--check", action="store_true", help="validate only, change nothing")
+    s.add_argument("--no-firewall", action="store_true", help="write the rules file but do not load it")
+    s.set_defaults(func=cmd_apply)
+
+    s = sub.add_parser("status", help="overview of services, customers and live calls")
+    s.set_defaults(func=cmd_status)
+
