@@ -1170,3 +1170,25 @@ def main():
     a.add_argument("--yes", action="store_true")
     s.set_defaults(func=cmd_fw)
 
+    s = sub.add_parser("cdr", help="recent call records")
+    s.add_argument("--customer")
+    s.add_argument("--limit", type=int, default=20)
+    s.add_argument("--today", action="store_true")
+    s.add_argument("--summary", action="store_true", help="totals per customer")
+    s.set_defaults(func=cmd_cdr)
+
+    args = p.parse_args()
+    if os.geteuid() != 0:
+        raise Fail("voipctl must be run as root")
+    os.umask(0o077)
+    args.func(args)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Fail as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(130)
