@@ -1154,3 +1154,19 @@ def main():
     a.add_argument("numbers", nargs="*", help="numbers to remove; none = delete the pool")
     s.set_defaults(func=cmd_pool)
 
+    s = sub.add_parser("telnyx", help="trunk credentials and status")
+    ss = s.add_subparsers(dest="action", required=True)
+    ss.add_parser("set-creds")
+    ss.add_parser("status")
+    s.set_defaults(func=cmd_telnyx)
+
+    s = sub.add_parser("hetzner", help="print the rules the Hetzner firewall should contain")
+    s.set_defaults(func=cmd_hetzner)
+
+    s = sub.add_parser("fw", help="show / disable the in-server firewall")
+    ss = s.add_subparsers(dest="action", required=True)
+    ss.add_parser("show")
+    a = ss.add_parser("disable")
+    a.add_argument("--yes", action="store_true")
+    s.set_defaults(func=cmd_fw)
+
