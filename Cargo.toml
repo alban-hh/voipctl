@@ -1,0 +1,38 @@
+[package]
+name = "voipctl"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "Declarative outbound Asterisk administration from the command line"
+license = "MIT"
+readme = "README.md"
+keywords = ["asterisk", "voip", "sip", "cli"]
+categories = ["command-line-utilities", "config"]
+exclude = ["voipctl", ".github", "docs"]
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }
+clap_complete = "4.5"
+fs2 = "0.4"
+ipnet = { version = "2", features = ["serde"] }
+rand = "0.8"
+rpassword = "7"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tempfile = "3"
+toml = "0.8"
+nix = { version = "0.30", features = ["user", "fs", "signal"] }
+
+[profile.release]
+lto = "thin"
+strip = true
+codegen-units = 1
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
+
