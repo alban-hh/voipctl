@@ -26,3 +26,30 @@ pub fn resolve(
     let endpoint = customer
         .extensions
         .get(extension)
+        .ok_or_else(|| anyhow::anyhow!("unknown extension"))?;
+    let (raw, caller_id) = if let Some(raw) = dialed.strip_prefix("11") {
+        (
+            raw,
+            endpoint
+                .alternate_caller_id
+                .as_ref()
+                .ok_or_else(|| anyhow::anyhow!("extension has no alternate caller ID"))?,
+        )
+    } else {
+        (
+            dialed.strip_prefix("10").unwrap_or(dialed),
+            &endpoint.caller_id,
+        )
+    };
+    let destination = normalize(raw, customer.default_country.as_deref())?;
+    let digits = &destination[1..];
+    if state
+        .config
+        .blocked_prefixes
+        .iter()
+        .any(|p| digits.starts_with(p))
+    {
+        bail!("destination is globally blocked");
+    }
+    ensure!(
+        customer
