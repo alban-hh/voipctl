@@ -53,3 +53,31 @@ pub fn resolve(
     }
     ensure!(
         customer
+            .allowed_prefixes
+            .iter()
+            .any(|p| digits.starts_with(p)),
+        "destination is not allowed for this customer"
+    );
+    Ok(DialDecision {
+        destination,
+        caller_id: caller_id.clone(),
+        trunk: customer.trunk.clone(),
+    })
+}
+
+pub fn normalize(raw: &str, default_country: Option<&str>) -> Result<String> {
+    let digits = if let Some(digits) = raw.strip_prefix('+') {
+        digits.to_owned()
+    } else if let Some(digits) = raw.strip_prefix("00") {
+        digits.to_owned()
+    } else if let Some(digits) = raw.strip_prefix('0') {
+        let country = default_country
+            .ok_or_else(|| anyhow::anyhow!("national format needs a default country"))?;
+        format!("{country}{digits}")
+    } else {
+        raw.to_owned()
+    };
+    let number = format!("+{digits}");
+    ensure!(valid_number(&number), "invalid E.164 destination");
+    Ok(number)
+}
