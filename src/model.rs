@@ -133,3 +133,23 @@ pub struct Secrets {
     pub extensions: BTreeMap<String, String>,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Credentials {
+    pub username: String,
+    pub password: String,
+}
+
+pub fn valid_name(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 32
+        && value.as_bytes()[0].is_ascii_lowercase()
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_' || b == b'-')
+}
+
+pub fn valid_extension(value: &str) -> bool {
+    (2..=8).contains(&value.len()) && value.bytes().all(|b| b.is_ascii_digit())
+}
+
