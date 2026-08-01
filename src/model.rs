@@ -153,3 +153,27 @@ pub fn valid_extension(value: &str) -> bool {
     (2..=8).contains(&value.len()) && value.bytes().all(|b| b.is_ascii_digit())
 }
 
+pub fn valid_prefix(value: &str) -> bool {
+    (1..=15).contains(&value.len())
+        && value.as_bytes()[0] != b'0'
+        && value.bytes().all(|b| b.is_ascii_digit())
+}
+
+pub fn valid_number(value: &str) -> bool {
+    value
+        .strip_prefix('+')
+        .is_some_and(|digits| (7..=15).contains(&digits.len()) && valid_prefix(digits))
+}
+
+pub fn valid_host(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 253
+        && value.split('.').all(|part| {
+            !part.is_empty()
+                && part.len() <= 63
+                && !part.starts_with('-')
+                && !part.ends_with('-')
+                && part.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-')
+        })
+}
+
