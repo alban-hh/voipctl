@@ -112,3 +112,24 @@ pub struct Customer {
     pub extensions: BTreeMap<String, Extension>,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Extension {
+    pub caller_id: String,
+    #[serde(default)]
+    pub alternate_caller_id: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Pool {
+    pub numbers: Vec<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Default)]
+#[serde(default, deny_unknown_fields)]
+pub struct Secrets {
+    pub trunks: BTreeMap<String, Credentials>,
+    pub extensions: BTreeMap<String, String>,
+}
+
