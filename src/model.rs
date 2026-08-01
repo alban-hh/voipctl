@@ -20,3 +20,29 @@ pub struct Config {
     #[serde(default)]
     pub trunks: BTreeMap<String, Trunk>,
     #[serde(default)]
+    pub customers: BTreeMap<String, Customer>,
+    #[serde(default)]
+    pub pools: BTreeMap<String, Pool>,
+    #[serde(default)]
+    pub caller_id_limits: BTreeMap<String, u32>,
+    #[serde(default)]
+    pub blocked_prefixes: Vec<String>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            schema_version: 1,
+            server: Server::default(),
+            trunks: BTreeMap::new(),
+            customers: BTreeMap::new(),
+            pools: BTreeMap::new(),
+            caller_id_limits: BTreeMap::new(),
+            blocked_prefixes: ["1900", "1976", "870", "881", "882", "883", "979"]
+                .into_iter()
+                .map(String::from)
+                .collect(),
+        }
+    }
+}
+
