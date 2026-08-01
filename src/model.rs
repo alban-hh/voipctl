@@ -90,3 +90,25 @@ pub struct Trunk {
     pub media: Vec<Ipv4Net>,
 }
 
+fn default_sip_port() -> u16 {
+    5060
+}
+fn default_trunk_limit() -> u32 {
+    100
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Customer {
+    pub trunk: String,
+    pub allowed_prefixes: Vec<String>,
+    #[serde(default)]
+    pub default_country: Option<String>,
+    pub max_calls: u32,
+    pub max_call_seconds: u32,
+    #[serde(default)]
+    pub source_ips: Vec<Ipv4Net>,
+    #[serde(default)]
+    pub extensions: BTreeMap<String, Extension>,
+}
+
