@@ -46,3 +46,17 @@ impl Default for Config {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct Server {
+    pub domain: String,
+    pub bind_address: std::net::Ipv4Addr,
+    pub sip_port: u16,
+    pub rtp_start: u16,
+    pub rtp_end: u16,
+    pub dial_timeout: u32,
+    pub max_calls_per_number: u32,
+    pub manage_fail2ban: bool,
+    pub cdr_database: String,
+}
+
