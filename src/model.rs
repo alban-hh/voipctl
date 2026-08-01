@@ -60,3 +60,33 @@ pub struct Server {
     pub cdr_database: String,
 }
 
+impl Default for Server {
+    fn default() -> Self {
+        Self {
+            domain: "pbx.example.com".into(),
+            bind_address: std::net::Ipv4Addr::UNSPECIFIED,
+            sip_port: 5060,
+            rtp_start: 10000,
+            rtp_end: 20000,
+            dial_timeout: 60,
+            max_calls_per_number: 0,
+            manage_fail2ban: false,
+            cdr_database: "asteriskcdr".into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Trunk {
+    pub host: String,
+    #[serde(default = "default_sip_port")]
+    pub port: u16,
+    #[serde(default = "default_trunk_limit")]
+    pub max_calls: u32,
+    #[serde(default)]
+    pub signaling: Vec<Ipv4Net>,
+    #[serde(default)]
+    pub media: Vec<Ipv4Net>,
+}
+
