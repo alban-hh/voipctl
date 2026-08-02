@@ -177,3 +177,18 @@ pub fn valid_host(value: &str) -> bool {
         })
 }
 
+pub fn validate_secret(value: &str, minimum: usize) -> Result<()> {
+    ensure!(
+        (minimum..=256).contains(&value.len()),
+        "credential length must be {minimum}..256 characters"
+    );
+    ensure!(
+        value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"_- .@+!$%&*:=?/".contains(&b))
+            && !value.contains(' '),
+        "credential contains characters unsupported by the Asterisk config writer"
+    );
+    Ok(())
+}
+
