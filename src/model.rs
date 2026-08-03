@@ -192,3 +192,29 @@ pub fn validate_secret(value: &str, minimum: usize) -> Result<()> {
     Ok(())
 }
 
+pub fn new_password() -> String {
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(40)
+        .map(char::from)
+        .collect()
+}
+
+impl State {
+    pub fn validate(&self) -> Result<()> {
+        let config = &self.config;
+        ensure!(
+            config.schema_version == 1,
+            "unsupported configuration schema {}",
+            config.schema_version
+        );
+        ensure!(valid_host(&config.server.domain), "invalid SIP domain");
+        ensure!(config.server.sip_port > 0, "SIP port cannot be zero");
+        ensure!(
+            config.server.rtp_start >= 1024 && config.server.rtp_start < config.server.rtp_end,
+            "RTP range must be increasing and start at 1024 or higher"
+        );
+        ensure!(
+            !(config.server.rtp_start..=config.server.rtp_end).contains(&config.server.sip_port),
+            "SIP and RTP ports overlap"
+        );
