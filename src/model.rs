@@ -240,3 +240,25 @@ impl State {
             );
         }
         for (name, pool) in &config.pools {
+            ensure!(valid_name(name), "invalid pool name {name}");
+            ensure!(
+                !pool.numbers.is_empty() && pool.numbers.len() <= 1000,
+                "pool {name} must contain 1..1000 numbers"
+            );
+            let unique: BTreeSet<_> = pool.numbers.iter().collect();
+            ensure!(
+                unique.len() == pool.numbers.len(),
+                "pool {name} contains duplicate numbers"
+            );
+            ensure!(
+                pool.numbers.iter().all(|n| valid_number(n)),
+                "pool {name} contains an invalid E.164 number"
+            );
+        }
+        for (name, trunk) in &config.trunks {
+            ensure!(valid_name(name), "invalid trunk name {name}");
+            ensure!(
+                valid_host(&trunk.host) && trunk.port > 0,
+                "invalid address for trunk {name}"
+            );
+            ensure!(
