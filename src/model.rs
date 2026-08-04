@@ -218,3 +218,25 @@ impl State {
             !(config.server.rtp_start..=config.server.rtp_end).contains(&config.server.sip_port),
             "SIP and RTP ports overlap"
         );
+        ensure!(
+            (1..=300).contains(&config.server.dial_timeout),
+            "dial timeout must be 1..300 seconds"
+        );
+        ensure!(
+            config.server.max_calls_per_number <= 1000,
+            "per-number limit cannot exceed 1000"
+        );
+        ensure!(
+            valid_name(&config.server.cdr_database),
+            "invalid CDR database name"
+        );
+        for prefix in &config.blocked_prefixes {
+            ensure!(valid_prefix(prefix), "invalid blocked prefix");
+        }
+        for (number, limit) in &config.caller_id_limits {
+            ensure!(
+                valid_number(number) && (1..=1000).contains(limit),
+                "invalid caller ID limit"
+            );
+        }
+        for (name, pool) in &config.pools {
