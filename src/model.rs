@@ -284,3 +284,25 @@ impl State {
                 "customer {name}: max calls must be 1..1000"
             );
             ensure!(
+                (30..=86400).contains(&customer.max_call_seconds),
+                "customer {name}: duration must be 30..86400 seconds"
+            );
+            ensure!(
+                customer.allowed_prefixes.iter().all(|p| valid_prefix(p)),
+                "customer {name} has an invalid allowed prefix"
+            );
+            if let Some(country) = &customer.default_country {
+                ensure!(
+                    country.len() <= 3 && valid_prefix(country),
+                    "invalid default country for {name}"
+                );
+            }
+            validate_networks(&customer.source_ips)?;
+            for (number, extension) in &customer.extensions {
+                ensure!(valid_extension(number), "invalid extension number {number}");
+                ensure!(
+                    extensions.insert(number),
+                    "extension {number} belongs to multiple customers"
+                );
+                self.validate_caller_id(&extension.caller_id)?;
+                if let Some(alternate) = &extension.alternate_caller_id {
