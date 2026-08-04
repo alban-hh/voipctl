@@ -262,3 +262,25 @@ impl State {
                 "invalid address for trunk {name}"
             );
             ensure!(
+                (1..=10000).contains(&trunk.max_calls),
+                "trunk {name}: max calls must be 1..10000"
+            );
+            validate_networks(&trunk.signaling)?;
+            validate_networks(&trunk.media)?;
+            if let Some(credentials) = self.secrets.trunks.get(name) {
+                validate_secret(&credentials.username, 1)?;
+                validate_secret(&credentials.password, 1)?;
+            }
+        }
+        let mut extensions = BTreeSet::new();
+        for (name, customer) in &config.customers {
+            ensure!(valid_name(name), "invalid customer name {name}");
+            ensure!(
+                config.trunks.contains_key(&customer.trunk),
+                "customer {name} refers to a missing trunk"
+            );
+            ensure!(
+                (1..=1000).contains(&customer.max_calls),
+                "customer {name}: max calls must be 1..1000"
+            );
+            ensure!(
