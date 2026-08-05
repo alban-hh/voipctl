@@ -346,3 +346,29 @@ impl State {
         Ok(())
     }
 
+    pub fn validate_activation(&self) -> Result<()> {
+        self.validate()?;
+        for (name, customer) in &self.config.customers {
+            if !customer.extensions.is_empty() && !self.secrets.trunks.contains_key(&customer.trunk)
+            {
+                bail!(
+                    "customer {name} uses trunk {} without credentials",
+                    customer.trunk
+                );
+            }
+        }
+        Ok(())
+    }
+}
+
+fn validate_networks(networks: &[Ipv4Net]) -> Result<()> {
+    for network in networks {
+        ensure!(
+            network.prefix_len() >= 16
+                && !network.addr().is_multicast()
+                && !network.addr().is_unspecified(),
+            "source networks must be IPv4 unicast ranges with prefix length 16 or greater"
+        );
+    }
+    Ok(())
+}
