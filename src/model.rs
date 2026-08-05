@@ -306,3 +306,28 @@ impl State {
                 );
                 self.validate_caller_id(&extension.caller_id)?;
                 if let Some(alternate) = &extension.alternate_caller_id {
+                    self.validate_caller_id(alternate)?;
+                }
+                let password = self
+                    .secrets
+                    .extensions
+                    .get(number)
+                    .ok_or_else(|| anyhow::anyhow!("extension {number} has no password"))?;
+                validate_secret(password, 16)?;
+            }
+        }
+        for number in self.secrets.extensions.keys() {
+            ensure!(
+                extensions.contains(number),
+                "orphaned credentials for extension {number}"
+            );
+        }
+        for name in self.secrets.trunks.keys() {
+            ensure!(
+                config.trunks.contains_key(name),
+                "orphaned credentials for trunk {name}"
+            );
+        }
+        Ok(())
+    }
+
