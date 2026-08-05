@@ -331,3 +331,18 @@ impl State {
         Ok(())
     }
 
+    pub fn validate_caller_id(&self, caller_id: &str) -> Result<()> {
+        if let Some(pool) = caller_id.strip_prefix("pool:") {
+            ensure!(
+                self.config.pools.contains_key(pool),
+                "unknown caller ID pool {pool}"
+            );
+        } else {
+            ensure!(
+                valid_number(caller_id),
+                "caller ID must be an E.164 number or pool:<name>"
+            );
+        }
+        Ok(())
+    }
+
