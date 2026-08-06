@@ -92,3 +92,27 @@ fn duplicate_extensions_and_missing_pools_are_rejected() {
     state.validate().unwrap();
     state
         .config
+        .customers
+        .insert("other".into(), state.config.customers["main"].clone());
+    assert!(state.validate().is_err());
+    state.config.customers.remove("other");
+    state.config.pools.clear();
+    assert!(state.validate().is_err());
+}
+
+#[test]
+fn unconfigured_trunks_can_be_staged_but_not_activated() {
+    let state = state();
+    state.validate().unwrap();
+    assert!(state.validate_activation().is_err());
+}
+
+#[test]
+fn public_configuration_does_not_contain_credentials() {
+    let state = state();
+    let public = serde_json::to_string(&state.config).unwrap();
+    assert!(!public.contains(&state.secrets.extensions["101"]));
+    let encoded = toml::to_string_pretty(&state).unwrap();
+    let decoded: State = toml::from_str(&encoded).unwrap();
+    decoded.validate().unwrap();
+}
