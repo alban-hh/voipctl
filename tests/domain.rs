@@ -44,3 +44,26 @@ fn state() -> State {
     state
 }
 
+#[test]
+fn dialing_preserves_both_caller_id_choices_and_national_format() {
+    let state = state();
+    let customer = &state.config.customers["main"];
+    for input in [
+        "100691234567",
+        "10+355691234567",
+        "10355691234567",
+        "1000355691234567",
+        "0691234567",
+    ] {
+        let call = dialing::resolve(&state, customer, "101", input).unwrap();
+        assert_eq!(call.destination, "+355691234567");
+        assert_eq!(call.caller_id, "+16135550100");
+    }
+    assert_eq!(
+        dialing::resolve(&state, customer, "101", "110691234567")
+            .unwrap()
+            .caller_id,
+        "pool:us"
+    );
+}
+
