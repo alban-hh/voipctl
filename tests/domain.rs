@@ -67,3 +67,28 @@ fn dialing_preserves_both_caller_id_choices_and_national_format() {
     );
 }
 
+#[test]
+fn malformed_and_disallowed_numbers_are_rejected() {
+    let state = state();
+    for input in [
+        "",
+        "10",
+        "++355691234567",
+        "35+5691234567",
+        "10+355 691234567",
+        "+19005550100",
+        "+49301234567",
+    ] {
+        assert!(
+            dialing::resolve(&state, &state.config.customers["main"], "101", input).is_err(),
+            "{input}"
+        );
+    }
+}
+
+#[test]
+fn duplicate_extensions_and_missing_pools_are_rejected() {
+    let mut state = state();
+    state.validate().unwrap();
+    state
+        .config
