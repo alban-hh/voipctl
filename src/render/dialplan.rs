@@ -20,3 +20,26 @@ pub fn render(state: &State) -> String {
                 "Set(CDR(src_ip)=${CHANNEL(pjsip,remote_addr)})",
             );
             line(&mut output, &format!("Set(CDR(accountcode)={name})"));
+            line(
+                &mut output,
+                "GotoIf($[${REGEX(\"^[+0-9]+$\" ${RAW})} = 0]?invalid)",
+            );
+            line(
+                &mut output,
+                &format!("Set(CID_SPEC={})", extension.caller_id),
+            );
+            line(&mut output, "GotoIf($[\"${RAW:0:2}\" = \"11\"]?alternate)");
+            line(
+                &mut output,
+                "GotoIf($[\"${RAW:0:2}\" = \"10\"]?strip:normalize)",
+            );
+            if let Some(cid) = &extension.alternate_caller_id {
+                labeled(&mut output, "alternate", &format!("Set(CID_SPEC={cid})"));
+                line(&mut output, "Goto(strip)");
+            } else {
+                labeled(&mut output, "alternate", "Goto(nocid)");
+            }
+            labeled(&mut output, "strip", "Set(RAW=${RAW:2})");
+            labeled(
+                &mut output,
+                "normalize",
