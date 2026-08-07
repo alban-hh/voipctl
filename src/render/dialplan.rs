@@ -43,3 +43,25 @@ pub fn render(state: &State) -> String {
             labeled(
                 &mut output,
                 "normalize",
+                "GotoIf($[${REGEX(\"^([+][1-9][0-9]*|[0-9]+)$\" ${RAW})} = 0]?invalid)",
+            );
+            line(&mut output, "Set(NUM=${RAW})");
+            line(
+                &mut output,
+                "ExecIf($[\"${RAW:0:1}\" = \"+\"]?Set(NUM=${RAW:1}))",
+            );
+            line(
+                &mut output,
+                "ExecIf($[\"${RAW:0:2}\" = \"00\"]?Set(NUM=${RAW:2}))",
+            );
+            if let Some(country) = &customer.default_country {
+                line(
+                    &mut output,
+                    &format!(
+                        "ExecIf($[\"${{RAW:0:1}}\" = \"0\" & \"${{RAW:0:2}}\" != \"00\"]?Set(NUM={country}${{RAW:1}}))"
+                    ),
+                );
+            }
+            line(
+                &mut output,
+                "GotoIf($[${REGEX(\"^[1-9][0-9]{6,14}$\" ${NUM})} = 0]?invalid)",
