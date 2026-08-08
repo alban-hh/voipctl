@@ -110,3 +110,25 @@ pub fn render(state: &State) -> String {
             line(
                 &mut output,
                 "GotoIf($[\"${CID_SPEC:0:5}\" = \"pool:\"]?pool)",
+            );
+            line(&mut output, "Set(CID=${CID_SPEC})");
+            line(&mut output, "Gosub(voipctl-cid-check,s,1)");
+            line(&mut output, "Goto(selected)");
+            labeled(&mut output, "pool", "Gosub(voipctl-pool-${CID_SPEC:5},s,1)");
+            labeled(&mut output, "selected", "GotoIf($[${AVAILABLE} != 1]?full)");
+            line(&mut output, &format!("Set(GROUP(voipctl-customer)={name})"));
+            line(
+                &mut output,
+                &format!("Set(GROUP(voipctl-trunk)={})", customer.trunk),
+            );
+            line(&mut output, "Set(GROUP(voipctl-cid)=${CID:1})");
+            line(&mut output, "Set(UNLOCKED=${UNLOCK(voipctl-allocation)})");
+            line(&mut output, "Set(CALLERID(name)=)");
+            line(&mut output, "Set(CALLERID(num)=${CID})");
+            line(
+                &mut output,
+                &format!("Set(TIMEOUT(absolute)={})", customer.max_call_seconds),
+            );
+            line(
+                &mut output,
+                &format!(
