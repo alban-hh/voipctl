@@ -88,3 +88,25 @@ pub fn render(state: &State) -> String {
             }
             line(&mut output, "Goto(denied)");
             labeled(
+                &mut output,
+                "allocate",
+                "Set(LOCKED=${LOCK(voipctl-allocation)})",
+            );
+            line(&mut output, "GotoIf($[${LOCKED} != 1]?limit)");
+            line(
+                &mut output,
+                &format!(
+                    "GotoIf($[${{GROUP_COUNT({name}@voipctl-customer)}} >= {}]?full)",
+                    customer.max_calls
+                ),
+            );
+            line(
+                &mut output,
+                &format!(
+                    "GotoIf($[${{GROUP_COUNT({}@voipctl-trunk)}} >= {}]?full)",
+                    customer.trunk, state.config.trunks[&customer.trunk].max_calls
+                ),
+            );
+            line(
+                &mut output,
+                "GotoIf($[\"${CID_SPEC:0:5}\" = \"pool:\"]?pool)",
