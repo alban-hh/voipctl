@@ -65,3 +65,26 @@ pub fn render(state: &State) -> String {
             line(
                 &mut output,
                 "GotoIf($[${REGEX(\"^[1-9][0-9]{6,14}$\" ${NUM})} = 0]?invalid)",
+            );
+            line(&mut output, "Set(DEST=+${NUM})");
+            line(&mut output, "Set(CDR(dialed)=${DEST})");
+            for prefix in &state.config.blocked_prefixes {
+                line(
+                    &mut output,
+                    &format!(
+                        "GotoIf($[\"${{NUM:0:{}}}\" = \"{prefix}\"]?denied)",
+                        prefix.len()
+                    ),
+                );
+            }
+            for prefix in &customer.allowed_prefixes {
+                line(
+                    &mut output,
+                    &format!(
+                        "GotoIf($[\"${{NUM:0:{}}}\" = \"{prefix}\"]?allocate)",
+                        prefix.len()
+                    ),
+                );
+            }
+            line(&mut output, "Goto(denied)");
+            labeled(
