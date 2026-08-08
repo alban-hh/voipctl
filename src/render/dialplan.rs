@@ -132,3 +132,26 @@ pub fn render(state: &State) -> String {
             line(
                 &mut output,
                 &format!(
+                    "Dial(PJSIP/${{DEST}}@trunk-{},{})",
+                    customer.trunk, state.config.server.dial_timeout
+                )
+                .as_str(),
+            );
+            line(&mut output, "Set(CDR_PROP(disable)=1)");
+            line(&mut output, "Hangup()");
+            labeled(
+                &mut output,
+                "full",
+                "Set(UNLOCKED=${UNLOCK(voipctl-allocation)})",
+            );
+            line(&mut output, "Goto(limit)");
+            for (label, cause, reason) in [
+                ("invalid", 28, "invalid-number"),
+                ("denied", 21, "destination-not-allowed"),
+                ("limit", 34, "concurrent-limit"),
+                ("nocid", 21, "no-caller-id"),
+            ] {
+                labeled(
+                    &mut output,
+                    label,
+                    &format!("Set(CDR(userfield)=REJECTED:{reason})"),
