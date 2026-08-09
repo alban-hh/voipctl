@@ -177,3 +177,26 @@ fn render_number_limit(state: &State, output: &mut String) {
             &format!("ExecIf($[\"${{CID}}\" = \"{number}\"]?Set(CID_LIMIT={limit}))"),
         );
     }
+    line(output, "Set(AVAILABLE=1)");
+    line(
+        output,
+        "ExecIf($[${CID_LIMIT} > 0 & ${GROUP_COUNT(${CID:1}@voipctl-cid)} >= ${CID_LIMIT}]?Set(AVAILABLE=0))",
+    );
+    line(output, "Return()");
+    output.push('\n');
+}
+
+fn render_pools(state: &State, output: &mut String) {
+    for (name, pool) in &state.config.pools {
+        let count = pool.numbers.len();
+        writeln!(
+            output,
+            "[voipctl-pool-{name}]\nexten => s,1,Set(INDEX=${{RAND(0,{})}})",
+            count - 1
+        )
+        .unwrap();
+        line(output, "Set(ATTEMPTS=0)");
+        labeled(output, "pick", "Goto(candidate-${INDEX})");
+        for (index, number) in pool.numbers.iter().enumerate() {
+            labeled(
+                output,
