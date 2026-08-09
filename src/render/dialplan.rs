@@ -200,3 +200,25 @@ fn render_pools(state: &State, output: &mut String) {
         for (index, number) in pool.numbers.iter().enumerate() {
             labeled(
                 output,
+                &format!("candidate-{index}"),
+                &format!("Set(CID={number})"),
+            );
+            line(output, "Goto(check)");
+        }
+        labeled(output, "check", "Gosub(voipctl-cid-check,s,1)");
+        line(output, "GotoIf($[${AVAILABLE} = 1]?done)");
+        line(output, "Set(ATTEMPTS=$[${ATTEMPTS} + 1])");
+        line(output, &format!("GotoIf($[${{ATTEMPTS}} >= {count}]?done)"));
+        line(output, &format!("Set(INDEX=$[(${{INDEX}} + 1) % {count}])"));
+        line(output, "Goto(pick)");
+        labeled(output, "done", "Return()");
+        output.push('\n');
+    }
+}
+
+fn line(output: &mut String, value: &str) {
+    writeln!(output, " same => n,{value}").unwrap();
+}
+fn labeled(output: &mut String, label: &str, value: &str) {
+    writeln!(output, " same => n({label}),{value}").unwrap();
+}
