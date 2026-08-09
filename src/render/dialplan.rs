@@ -155,3 +155,25 @@ pub fn render(state: &State) -> String {
                     &mut output,
                     label,
                     &format!("Set(CDR(userfield)=REJECTED:{reason})"),
+                );
+                line(&mut output, &format!("Hangup({cause})"));
+            }
+            output.push('\n');
+        }
+    }
+    output
+}
+
+fn render_number_limit(state: &State, output: &mut String) {
+    writeln!(
+        output,
+        "[voipctl-cid-check]\nexten => s,1,Set(CID_LIMIT={})",
+        state.config.server.max_calls_per_number
+    )
+    .unwrap();
+    for (number, limit) in &state.config.caller_id_limits {
+        line(
+            output,
+            &format!("ExecIf($[\"${{CID}}\" = \"{number}\"]?Set(CID_LIMIT={limit}))"),
+        );
+    }
