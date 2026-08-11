@@ -47,3 +47,28 @@ pub fn generate(state: &State) -> Result<Vec<Artifact>> {
                 .into(),
         ),
     ];
+    if server.manage_fail2ban {
+        let ignores: Vec<String> = std::iter::once("127.0.0.1/8".into())
+            .chain(
+                state
+                    .config
+                    .trunks
+                    .values()
+                    .flat_map(|t| t.signaling.iter().map(ToString::to_string)),
+            )
+            .collect();
+        files.push(Artifact {
+            path: "etc/fail2ban/jail.d/voipctl.conf".into(),
+            content: format!("[voipctl-asterisk]\nenabled=true\nfilter=asterisk\nbackend=auto\nlogpath=/var/log/asterisk/security\naction=nftables[type=custom, blocktype=drop]\nignoreip={}\nmaxretry=8\nfindtime=10m\nbantime=1h\n", ignores.join(" ")),
+            mode: 0o644, group: "root".into(),
+        });
+    } else {
+        files.push(Artifact {
+            path: "etc/fail2ban/jail.d/voipctl.conf".into(),
+            content: "[voipctl-asterisk]\nenabled=false\n".into(),
+            mode: 0o644,
+            group: "root".into(),
+        });
+    }
+    Ok(files)
+}
