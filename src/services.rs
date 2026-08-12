@@ -40,3 +40,32 @@ pub fn command(program: &str, arguments: &[&str]) -> Result<String> {
     Ok(text)
 }
 
+pub fn asterisk(query: &str) -> Result<String> {
+    let output = command("/usr/sbin/asterisk", &["-rx", query])?;
+    ensure!(
+        ![
+            "No such command",
+            "Unable to connect",
+            "Unable to find",
+            "No objects found"
+        ]
+        .iter()
+        .any(|message| output.contains(message)),
+        "Asterisk could not complete the requested operation"
+    );
+    Ok(output)
+}
+
+pub struct LiveServices<'a> {
+    pub layout: &'a Layout,
+    pub state: &'a State,
+    pub restart: bool,
+    pub manage_fail2ban: bool,
+}
+
+impl<'a> LiveServices<'a> {
+    pub fn new(layout: &'a Layout, state: &'a State, restart: bool) -> Result<Self> {
+        let old = fs::read_to_string(layout.path("etc/fail2ban/jail.d/voipctl.conf")?)
+            .unwrap_or_default();
+        Ok(Self {
+            layout,
