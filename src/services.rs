@@ -69,3 +69,26 @@ impl<'a> LiveServices<'a> {
             .unwrap_or_default();
         Ok(Self {
             layout,
+            state,
+            restart,
+            manage_fail2ban: state.config.server.manage_fail2ban || old.contains("enabled=true"),
+        })
+    }
+
+    fn active(&self, service: &str) -> Result<()> {
+        command("/usr/bin/systemctl", &["is-active", "--quiet", service])?;
+        Ok(())
+    }
+}
+
+impl Activator for LiveServices<'_> {
+    fn preflight(&mut self, artifacts: &[Artifact]) -> Result<()> {
+        ensure!(
+            cfg!(target_os = "linux") && self.layout.live(),
+            "service activation requires a Linux host with --root /"
+        );
+        self.active("asterisk")?;
+        let version = asterisk("core show version")?;
+        ensure!(
+            version.contains("Asterisk 22."),
+            "this release supports Asterisk 22; detected an unsupported version"
