@@ -92,3 +92,27 @@ impl Activator for LiveServices<'_> {
         ensure!(
             version.contains("Asterisk 22."),
             "this release supports Asterisk 22; detected an unsupported version"
+        );
+        for module in [
+            "chan_pjsip.so",
+            "res_pjsip.so",
+            "pbx_config.so",
+            "app_dial.so",
+            "app_stack.so",
+            "func_lock.so",
+            "func_groupcount.so",
+            "func_strings.so",
+            "func_cdr.so",
+            "func_callerid.so",
+            "func_timeout.so",
+            "func_rand.so",
+        ] {
+            let output = asterisk(&format!("module show like {module}"))?;
+            ensure!(
+                output.contains(module) && output.contains("Running"),
+                "required Asterisk module {module} is not running"
+            );
+        }
+        let old =
+            fs::read_to_string(self.layout.path("etc/asterisk/pjsip.conf")?).unwrap_or_default();
+        let new = &artifacts
