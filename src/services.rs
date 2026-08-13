@@ -183,3 +183,30 @@ impl Activator for LiveServices<'_> {
     }
 }
 
+fn endpoint_names(config: &str) -> Vec<String> {
+    let mut section = "";
+    let mut endpoints = Vec::new();
+    for line in config.lines() {
+        if let Some(name) = line.strip_prefix('[').and_then(|s| s.strip_suffix(']')) {
+            section = name;
+        }
+        if line == "type=endpoint" {
+            endpoints.push(section.to_owned());
+        }
+    }
+    endpoints
+}
+
+fn transport(config: &str) -> Vec<&str> {
+    let mut active = false;
+    config
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim();
+            if line.starts_with('[') {
+                active = line == "[transport-udp]";
+            }
+            (active && !line.is_empty() && !line.starts_with(';')).then_some(line)
+        })
+        .collect()
+}
