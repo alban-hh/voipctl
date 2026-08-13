@@ -163,3 +163,23 @@ impl Activator for LiveServices<'_> {
             ensure!(
                 response.contains("Endpoint:"),
                 "endpoint {number} did not load"
+            );
+        }
+        let dialplan = fs::read_to_string(self.layout.path("etc/asterisk/extensions.conf")?)?;
+        for context in dialplan.lines().filter_map(|line| {
+            line.strip_prefix("[voipctl-ext-")
+                .and_then(|s| s.strip_suffix(']'))
+        }) {
+            let response = asterisk(&format!("dialplan show voipctl-ext-{context}"))?;
+            ensure!(
+                response.contains("priority") || response.contains("priorities"),
+                "dialplan for {context} did not load"
+            );
+        }
+        if self.manage_fail2ban {
+            self.active("fail2ban")?;
+        }
+        Ok(())
+    }
+}
+
