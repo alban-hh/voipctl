@@ -139,3 +139,27 @@ impl Activator for LiveServices<'_> {
         Ok(())
     }
 
+    fn activate(&mut self) -> Result<()> {
+        if self.restart {
+            command("/usr/bin/systemctl", &["restart", "asterisk"])?;
+        } else {
+            for query in ["pjsip reload", "dialplan reload", "logger reload"] {
+                asterisk(query)?;
+            }
+        }
+        if self.manage_fail2ban {
+            command("/usr/bin/fail2ban-client", &["-t"])?;
+            command("/usr/bin/systemctl", &["restart", "fail2ban"])?;
+        }
+        Ok(())
+    }
+
+    fn verify(&mut self) -> Result<()> {
+        self.active("asterisk")?;
+        asterisk("pjsip show transport transport-udp")?;
+        let pjsip = fs::read_to_string(self.layout.path("etc/asterisk/pjsip.conf")?)?;
+        for number in endpoint_names(&pjsip) {
+            let response = asterisk(&format!("pjsip show endpoint {number}"))?;
+            ensure!(
+                response.contains("Endpoint:"),
+                "endpoint {number} did not load"
