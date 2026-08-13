@@ -116,3 +116,26 @@ impl Activator for LiveServices<'_> {
         let old =
             fs::read_to_string(self.layout.path("etc/asterisk/pjsip.conf")?).unwrap_or_default();
         let new = &artifacts
+            .iter()
+            .find(|a| a.path == "etc/asterisk/pjsip.conf")
+            .context("missing PJSIP output")?
+            .content;
+        ensure!(
+            self.restart || transport(&old) == transport(new),
+            "transport configuration changed; inspect plan and use apply --restart during a maintenance window"
+        );
+        if self.restart {
+            let channels = asterisk("core show channels count")?;
+            ensure!(
+                channels
+                    .lines()
+                    .any(|line| line.trim() == "0 active channels"),
+                "restart refused while calls or channels are active"
+            );
+        }
+        if self.manage_fail2ban {
+            self.active("fail2ban")?;
+        }
+        Ok(())
+    }
+
