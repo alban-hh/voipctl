@@ -66,3 +66,31 @@ impl Layout {
             .write(true)
             .create(true)
             .truncate(false)
+            .mode(0o600)
+            .open(path)?;
+        file.try_lock_exclusive()
+            .context("another voipctl command is changing this workspace")?;
+        Ok(file)
+    }
+
+    pub fn load(&self) -> Result<State> {
+        let path = self.state_path()?;
+        let metadata = fs::metadata(&path).context("configuration not found; run voipctl init")?;
+        ensure!(
+            metadata.len() <= 4 * 1024 * 1024,
+            "configuration exceeds 4 MiB"
+        );
+        ensure!(
+            metadata.permissions().mode() & 0o077 == 0,
+            "state.toml contains credentials and must have mode 600"
+        );
+        let text = fs::read_to_string(path)?;
+        let state: State = toml::from_str(&text).map_err(|_| {
+            anyhow::anyhow!(
+                "invalid state.toml syntax or unknown fields; values omitted to protect credentials"
+            )
+        })?;
+        state.validate()?;
+        Ok(state)
+    }
+
