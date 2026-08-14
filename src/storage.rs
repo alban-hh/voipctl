@@ -94,3 +94,18 @@ impl Layout {
         Ok(state)
     }
 
+    pub fn save(&self, state: &State) -> Result<()> {
+        self.require_write_access()?;
+        state.validate()?;
+        let path = self.state_path()?;
+        private_directory(path.parent().context("missing state directory")?)?;
+        atomic_write(
+            &path,
+            toml::to_string_pretty(state)?.as_bytes(),
+            0o600,
+            None,
+        )?;
+        Ok(())
+    }
+}
+
