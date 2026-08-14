@@ -44,3 +44,25 @@ impl Layout {
         Ok(full)
     }
 
+    pub fn state_path(&self) -> Result<PathBuf> {
+        self.path("etc/voipctl/state.toml")
+    }
+
+    pub fn require_write_access(&self) -> Result<()> {
+        ensure!(
+            !self.live() || Uid::effective().is_root(),
+            "live changes require root; use --root for an offline workspace"
+        );
+        Ok(())
+    }
+
+    pub fn lock(&self) -> Result<File> {
+        self.require_write_access()?;
+        let dir = self.path("var/lib/voipctl")?;
+        private_directory(&dir)?;
+        let path = self.path("var/lib/voipctl/lock")?;
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
