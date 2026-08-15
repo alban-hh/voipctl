@@ -39,3 +39,27 @@ pub struct Change {
     pub action: &'static str,
 }
 
+pub trait Activator {
+    fn preflight(&mut self, artifacts: &[Artifact]) -> Result<()>;
+    fn activate(&mut self) -> Result<()>;
+    fn verify(&mut self) -> Result<()>;
+}
+
+pub struct Offline;
+
+impl Activator for Offline {
+    fn preflight(&mut self, _: &[Artifact]) -> Result<()> {
+        Ok(())
+    }
+    fn activate(&mut self) -> Result<()> {
+        Ok(())
+    }
+    fn verify(&mut self) -> Result<()> {
+        Ok(())
+    }
+}
+
+pub fn fingerprint(value: &str) -> String {
+    format!("{:x}", Sha256::digest(value.as_bytes()))
+}
+
