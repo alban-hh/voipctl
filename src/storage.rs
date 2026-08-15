@@ -131,3 +131,29 @@ pub fn private_directory(path: &Path) -> Result<()> {
     Ok(())
 }
 
+pub fn atomic_write(
+    path: &Path,
+    content: &[u8],
+    mode: u32,
+    owner: Option<(u32, u32)>,
+) -> Result<()> {
+    reject_symlinks(path)?;
+    let parent = path.parent().context("managed file has no parent")?;
+    fs::create_dir_all(parent)?;
+    let mut pending = tempfile::NamedTempFile::new_in(parent)?;
+    pending
+        .as_file()
+        .set_permissions(fs::Permissions::from_mode(mode))?;
+    pending.write_all(content)?;
+    if let Some((uid, gid)) = owner {
+        chown(
+            pending.path(),
+            Some(Uid::from_raw(uid)),
+            Some(Gid::from_raw(gid)),
+        )?;
+    }
+    pending.as_file().sync_all()?;
+    pending.persist(path).map_err(|e| e.error)?;
+    File::open(parent)?.sync_all()?;
+    Ok(())
+}
