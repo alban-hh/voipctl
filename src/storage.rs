@@ -109,3 +109,25 @@ impl Layout {
     }
 }
 
+pub fn reject_symlinks(path: &Path) -> Result<()> {
+    for ancestor in path.ancestors() {
+        match fs::symlink_metadata(ancestor) {
+            Ok(meta) => ensure!(
+                !meta.file_type().is_symlink(),
+                "managed path contains a symlink: {}",
+                ancestor.display()
+            ),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e.into()),
+        }
+    }
+    Ok(())
+}
+
+pub fn private_directory(path: &Path) -> Result<()> {
+    reject_symlinks(path)?;
+    fs::create_dir_all(path)?;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o700))?;
+    Ok(())
+}
+
