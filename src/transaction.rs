@@ -21,3 +21,21 @@ pub struct FileVersion {
     pub gid: u32,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct Snapshot {
+    pub id: String,
+    pub files: Vec<FileVersion>,
+    pub manifest: Option<String>,
+}
+
+#[derive(Default, Serialize, Deserialize)]
+pub struct Manifest {
+    pub files: BTreeMap<String, String>,
+}
+
+#[derive(Serialize)]
+pub struct Change {
+    pub path: String,
+    pub action: &'static str,
+}
+
