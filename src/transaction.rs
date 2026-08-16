@@ -87,3 +87,22 @@ pub fn plan(layout: &Layout, artifacts: &[Artifact]) -> Result<Vec<Change>> {
     Ok(changes)
 }
 
+pub fn apply(
+    layout: &Layout,
+    artifacts: &[Artifact],
+    adopt: bool,
+    activator: &mut dyn Activator,
+) -> Result<String> {
+    layout.require_write_access()?;
+    ensure!(
+        !layout.path("var/lib/voipctl/pending.json")?.exists(),
+        "an interrupted transaction exists; run recover first"
+    );
+    activator.preflight(artifacts)?;
+    let manifest_path = layout.path("var/lib/voipctl/manifest.json")?;
+    let previous_manifest = if manifest_path.exists() {
+        Some(fs::read_to_string(&manifest_path)?)
+    } else {
+        None
+    };
+    let manifest: Manifest = previous_manifest
