@@ -127,3 +127,25 @@ pub fn apply(
                 artifact.path
             );
         }
+        files.push(FileVersion {
+            path: artifact.path.clone(),
+            content,
+            mode: metadata
+                .as_ref()
+                .map_or(artifact.mode, |m| m.permissions().mode() & 0o777),
+            uid: metadata.as_ref().map_or(0, MetadataExt::uid),
+            gid: metadata.as_ref().map_or(0, MetadataExt::gid),
+        });
+    }
+    let id = SystemTime::now()
+        .duration_since(UNIX_EPOCH)?
+        .as_nanos()
+        .to_string();
+    let snapshot = Snapshot {
+        id: id.clone(),
+        files,
+        manifest: previous_manifest,
+    };
+    let history = layout.path("var/lib/voipctl/history")?;
+    private_directory(&history)?;
+    let encoded = serde_json::to_vec(&snapshot)?;
