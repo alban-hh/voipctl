@@ -106,3 +106,24 @@ pub fn apply(
         None
     };
     let manifest: Manifest = previous_manifest
+        .as_deref()
+        .map(serde_json::from_str)
+        .transpose()?
+        .unwrap_or_default();
+    let mut files = Vec::new();
+    for artifact in artifacts {
+        let path = layout.path(&artifact.path)?;
+        let metadata = fs::metadata(&path).ok();
+        let content = if path.exists() {
+            Some(fs::read_to_string(&path)?)
+        } else {
+            None
+        };
+        if let Some(content) = &content {
+            let tracked = manifest.files.get(&artifact.path);
+            ensure!(
+                adopt || tracked.is_some_and(|expected| *expected == fingerprint(content)),
+                "{} is untracked or changed outside voipctl; inspect plan and explicitly use --adopt-existing",
+                artifact.path
+            );
+        }
