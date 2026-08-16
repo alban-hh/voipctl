@@ -63,3 +63,27 @@ pub fn fingerprint(value: &str) -> String {
     format!("{:x}", Sha256::digest(value.as_bytes()))
 }
 
+pub fn plan(layout: &Layout, artifacts: &[Artifact]) -> Result<Vec<Change>> {
+    let mut changes = Vec::new();
+    for artifact in artifacts {
+        let path = layout.path(&artifact.path)?;
+        if !path.exists() {
+            changes.push(Change {
+                path: artifact.path.clone(),
+                action: "create",
+            });
+        } else if fs::read_to_string(&path)? != artifact.content {
+            changes.push(Change {
+                path: artifact.path.clone(),
+                action: "update",
+            });
+        } else if fs::metadata(path)?.permissions().mode() & 0o777 != artifact.mode {
+            changes.push(Change {
+                path: artifact.path.clone(),
+                action: "permissions",
+            });
+        }
+    }
+    Ok(changes)
+}
+
