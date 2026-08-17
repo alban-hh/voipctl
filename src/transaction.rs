@@ -213,3 +213,25 @@ pub fn restore(layout: &Layout, snapshot: &Snapshot) -> Result<()> {
                 layout.live().then_some((file.uid, file.gid)),
             )?;
         } else if path.exists() {
+            fs::remove_file(path)?;
+        }
+    }
+    let path = layout.path("var/lib/voipctl/manifest.json")?;
+    if let Some(manifest) = &snapshot.manifest {
+        atomic_write(&path, manifest.as_bytes(), 0o600, None)?;
+    } else if path.exists() {
+        fs::remove_file(path)?;
+    }
+    Ok(())
+}
+
+pub fn recover(layout: &Layout, activator: &mut dyn Activator) -> Result<()> {
+    let path = layout.path("var/lib/voipctl/pending.json")?;
+    let snapshot: Snapshot =
+        serde_json::from_slice(&fs::read(&path).context("no interrupted transaction")?)?;
+    restore(layout, &snapshot)?;
+    activator.activate()?;
+    activator.verify()?;
+    fs::remove_file(path)?;
+    Ok(())
+}
