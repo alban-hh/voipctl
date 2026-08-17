@@ -149,3 +149,24 @@ pub fn apply(
     let history = layout.path("var/lib/voipctl/history")?;
     private_directory(&history)?;
     let encoded = serde_json::to_vec(&snapshot)?;
+    atomic_write(&history.join(format!("{id}.json")), &encoded, 0o600, None)?;
+    let pending = layout.path("var/lib/voipctl/pending.json")?;
+    atomic_write(&pending, &encoded, 0o600, None)?;
+    let operation = (|| -> Result<()> {
+        for artifact in artifacts {
+            let owner = if layout.live() {
+                let group = nix::unistd::Group::from_name(&artifact.group)?
+                    .context("required service group not found")?;
+                Some((0, group.gid.as_raw()))
+            } else {
+                None
+            };
+            atomic_write(
+                &layout.path(&artifact.path)?,
+                artifact.content.as_bytes(),
+                artifact.mode,
+                owner,
+            )?;
+        }
+        activator.activate()?;
+        activator.verify()?;
