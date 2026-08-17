@@ -170,3 +170,30 @@ pub fn apply(
         }
         activator.activate()?;
         activator.verify()?;
+        let manifest = Manifest {
+            files: artifacts
+                .iter()
+                .map(|a| (a.path.clone(), fingerprint(&a.content)))
+                .collect(),
+        };
+        atomic_write(&manifest_path, &serde_json::to_vec(&manifest)?, 0o600, None)?;
+        Ok(())
+    })();
+    if let Err(error) = operation {
+        let recovery = restore(layout, &snapshot)
+            .and_then(|_| activator.activate())
+            .and_then(|_| activator.verify());
+        match recovery {
+            Ok(()) => {
+                fs::remove_file(pending)?;
+                bail!("apply failed: {error:#}; previous files and services restored");
+            }
+            Err(recovery_error) => bail!(
+                "apply failed: {error:#}; recovery also failed: {recovery_error:#}; pending journal retained; run recover"
+            ),
+        }
+    }
+    fs::remove_file(pending)?;
+    Ok(id)
+}
+
