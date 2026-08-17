@@ -197,3 +197,19 @@ pub fn apply(
     Ok(id)
 }
 
+pub fn restore(layout: &Layout, snapshot: &Snapshot) -> Result<()> {
+    for file in &snapshot.files {
+        ensure!(
+            file.path.starts_with("etc/asterisk/")
+                || file.path == "etc/fail2ban/jail.d/voipctl.conf",
+            "unexpected snapshot path"
+        );
+        let path = layout.path(&file.path)?;
+        if let Some(content) = &file.content {
+            atomic_write(
+                &path,
+                content.as_bytes(),
+                file.mode,
+                layout.live().then_some((file.uid, file.gid)),
+            )?;
+        } else if path.exists() {
