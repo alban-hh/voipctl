@@ -22,3 +22,26 @@ impl Activator for Faults {
             self.remaining -= 1;
             bail!("simulated activation failure");
         }
+        Ok(())
+    }
+    fn verify(&mut self) -> Result<()> {
+        Ok(())
+    }
+}
+
+fn artifact(content: &str) -> Artifact {
+    Artifact::asterisk("pjsip.conf", content.into())
+}
+
+#[test]
+fn failed_activation_restores_all_files_and_previous_manifest() {
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let _lock = layout.lock().unwrap();
+    transaction::apply(&layout, &[artifact("before")], false, &mut Offline).unwrap();
+    let manifest = fs::read(layout.path("var/lib/voipctl/manifest.json").unwrap()).unwrap();
+    let mut faults = Faults {
+        remaining: 1,
+        activations: 0,
+    };
+    assert!(
