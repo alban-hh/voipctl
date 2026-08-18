@@ -45,3 +45,27 @@ fn failed_activation_restores_all_files_and_previous_manifest() {
         activations: 0,
     };
     assert!(
+        transaction::apply(
+            &layout,
+            &[
+                artifact("after"),
+                Artifact::asterisk("extensions.conf", "new".into())
+            ],
+            false,
+            &mut faults
+        )
+        .is_err()
+    );
+    assert_eq!(
+        fs::read_to_string(layout.path("etc/asterisk/pjsip.conf").unwrap()).unwrap(),
+        "before"
+    );
+    assert!(
+        !layout
+            .path("etc/asterisk/extensions.conf")
+            .unwrap()
+            .exists()
+    );
+    assert_eq!(
+        fs::read(layout.path("var/lib/voipctl/manifest.json").unwrap()).unwrap(),
+        manifest
