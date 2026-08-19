@@ -120,3 +120,23 @@ fn external_edits_require_explicit_adoption() {
     transaction::apply(&layout, &[artifact("next")], true, &mut Offline).unwrap();
 }
 
+#[test]
+fn unchanged_files_still_get_service_verification_on_retry() {
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let _lock = layout.lock().unwrap();
+    transaction::apply(&layout, &[artifact("same")], false, &mut Offline).unwrap();
+    let mut faults = Faults {
+        remaining: 0,
+        activations: 0,
+    };
+    transaction::apply(&layout, &[artifact("same")], false, &mut faults).unwrap();
+    assert_eq!(faults.activations, 1);
+}
+
+#[test]
+fn invalid_state_cannot_replace_a_valid_configuration() {
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let _lock = layout.lock().unwrap();
+    layout.save(&State::default()).unwrap();
