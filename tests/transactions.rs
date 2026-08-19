@@ -93,3 +93,30 @@ fn failed_recovery_keeps_a_journal_and_blocks_new_changes() {
         layout
             .path("var/lib/voipctl/pending.json")
             .unwrap()
+            .exists()
+    );
+    assert!(transaction::apply(&layout, &[artifact("other")], false, &mut Offline).is_err());
+    transaction::recover(&layout, &mut Offline).unwrap();
+    assert!(
+        !layout
+            .path("var/lib/voipctl/pending.json")
+            .unwrap()
+            .exists()
+    );
+}
+
+#[test]
+fn external_edits_require_explicit_adoption() {
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let _lock = layout.lock().unwrap();
+    transaction::apply(&layout, &[artifact("generated")], false, &mut Offline).unwrap();
+    fs::write(
+        layout.path("etc/asterisk/pjsip.conf").unwrap(),
+        "manual edit",
+    )
+    .unwrap();
+    assert!(transaction::apply(&layout, &[artifact("next")], false, &mut Offline).is_err());
+    transaction::apply(&layout, &[artifact("next")], true, &mut Offline).unwrap();
+}
+
