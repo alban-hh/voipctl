@@ -69,3 +69,27 @@ fn failed_activation_restores_all_files_and_previous_manifest() {
     assert_eq!(
         fs::read(layout.path("var/lib/voipctl/manifest.json").unwrap()).unwrap(),
         manifest
+    );
+    assert_eq!(faults.activations, 2);
+    assert!(
+        !layout
+            .path("var/lib/voipctl/pending.json")
+            .unwrap()
+            .exists()
+    );
+}
+
+#[test]
+fn failed_recovery_keeps_a_journal_and_blocks_new_changes() {
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let _lock = layout.lock().unwrap();
+    let mut faults = Faults {
+        remaining: 2,
+        activations: 0,
+    };
+    assert!(transaction::apply(&layout, &[artifact("new")], false, &mut faults).is_err());
+    assert!(
+        layout
+            .path("var/lib/voipctl/pending.json")
+            .unwrap()
