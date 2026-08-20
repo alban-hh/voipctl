@@ -140,3 +140,27 @@ fn invalid_state_cannot_replace_a_valid_configuration() {
     let layout = Layout::new(dir.path().to_owned()).unwrap();
     let _lock = layout.lock().unwrap();
     layout.save(&State::default()).unwrap();
+    let original = fs::read(layout.state_path().unwrap()).unwrap();
+    let mut invalid = State::default();
+    invalid.config.server.sip_port = 0;
+    assert!(layout.save(&invalid).is_err());
+    assert_eq!(fs::read(layout.state_path().unwrap()).unwrap(), original);
+    assert_eq!(
+        fs::metadata(layout.state_path().unwrap())
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777,
+        0o600
+    );
+}
+
+#[test]
+fn concurrent_writers_cannot_acquire_the_same_lock() {
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let lock = layout.lock().unwrap();
+    assert!(layout.lock().is_err());
+    drop(lock);
+    assert!(layout.lock().is_ok());
+}
