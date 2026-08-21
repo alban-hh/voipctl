@@ -47,3 +47,20 @@ pub fn edit(
     )
 }
 
+fn customer_mut<'a>(state: &'a mut State, name: &str) -> Result<&'a mut Customer> {
+    state
+        .config
+        .customers
+        .get_mut(name)
+        .with_context(|| format!("unknown customer {name}"))
+}
+
+pub fn customer(layout: &Layout, command: CustomerCommand, json: bool) -> Result<()> {
+    match command {
+        CustomerCommand::List => display(&layout.load()?.config.customers, json),
+        CustomerCommand::Show { name } => display(
+            layout
+                .load()?
+                .config
+                .customers
+                .get(&name)
