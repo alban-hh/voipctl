@@ -149,3 +149,27 @@ pub fn customer(layout: &Layout, command: CustomerCommand, json: bool) -> Result
     }
 }
 
+pub fn extension(layout: &Layout, command: ExtensionCommand, json: bool) -> Result<()> {
+    match command {
+        ExtensionCommand::List { customer } => display(
+            &layout
+                .load()?
+                .config
+                .customers
+                .get(&customer)
+                .context("unknown customer")?
+                .extensions,
+            json,
+        ),
+        ExtensionCommand::Show {
+            customer,
+            number,
+            reveal,
+        } => {
+            let state = layout.load()?;
+            let extension = state
+                .config
+                .customers
+                .get(&customer)
+                .context("unknown customer")?
+                .extensions
