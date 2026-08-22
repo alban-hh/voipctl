@@ -108,3 +108,25 @@ pub fn customer(layout: &Layout, command: CustomerCommand, json: bool) -> Result
                 } => {
                     let customer = customer_mut(state, &name)?;
                     if let Some(value) = trunk {
+                        customer.trunk = value;
+                    }
+                    if let Some(value) = allow {
+                        customer.allowed_prefixes = prefixes(value);
+                    }
+                    if let Some(value) = default_country {
+                        customer.default_country = Some(value);
+                    }
+                    if clear_default_country {
+                        customer.default_country = None;
+                    }
+                    if let Some(value) = max_calls {
+                        customer.max_calls = value;
+                    }
+                    if let Some(value) = max_seconds {
+                        customer.max_call_seconds = value;
+                    }
+                    if let Some(value) = source_ips {
+                        customer.source_ips = value;
+                    }
+                    if clear_source_ips {
+                        customer.source_ips.clear();
