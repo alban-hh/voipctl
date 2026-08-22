@@ -130,3 +130,22 @@ pub fn customer(layout: &Layout, command: CustomerCommand, json: bool) -> Result
                     }
                     if clear_source_ips {
                         customer.source_ips.clear();
+                    }
+                }
+                CustomerCommand::Remove { name, .. } => {
+                    let customer = state
+                        .config
+                        .customers
+                        .remove(&name)
+                        .context("unknown customer")?;
+                    for extension in customer.extensions.keys() {
+                        state.secrets.extensions.remove(extension);
+                    }
+                }
+                _ => unreachable!(),
+            }
+            Ok(())
+        }),
+    }
+}
+
