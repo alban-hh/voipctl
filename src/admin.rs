@@ -86,3 +86,25 @@ pub fn customer(layout: &Layout, command: CustomerCommand, json: bool) -> Result
                         name,
                         Customer {
                             trunk,
+                            allowed_prefixes: prefixes(allow),
+                            default_country,
+                            max_calls,
+                            max_call_seconds: max_seconds,
+                            source_ips,
+                            extensions: BTreeMap::new(),
+                        },
+                    );
+                }
+                CustomerCommand::Set {
+                    name,
+                    trunk,
+                    allow,
+                    default_country,
+                    clear_default_country,
+                    max_calls,
+                    max_seconds,
+                    source_ips,
+                    clear_source_ips,
+                } => {
+                    let customer = customer_mut(state, &name)?;
+                    if let Some(value) = trunk {
