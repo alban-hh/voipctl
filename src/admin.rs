@@ -264,3 +264,22 @@ pub fn extension(layout: &Layout, command: ExtensionCommand, json: bool) -> Resu
     }
 }
 
+pub fn trunk(layout: &Layout, command: TrunkCommand, json: bool) -> Result<()> {
+    match command {
+        TrunkCommand::List => display(&layout.load()?.config.trunks, json),
+        TrunkCommand::Show { name } => display(
+            layout
+                .load()?
+                .config
+                .trunks
+                .get(&name)
+                .context("unknown trunk")?,
+            json,
+        ),
+        other => edit(layout, json, |state| {
+            match other {
+                TrunkCommand::Add {
+                    name,
+                    host,
+                    port,
+                    max_calls,
