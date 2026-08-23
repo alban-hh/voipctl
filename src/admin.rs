@@ -195,3 +195,25 @@ pub fn extension(layout: &Layout, command: ExtensionCommand, json: bool) -> Resu
                         !state.secrets.extensions.contains_key(&number),
                         "extension already exists"
                     );
+                    ensure!(!ids.no_cid2, "--no-cid2 is only valid for ext set");
+                    let primary = ids.primary().context("provide --cid or --pool")?;
+                    customer_mut(state, &customer)?.extensions.insert(
+                        number.clone(),
+                        Extension {
+                            caller_id: primary,
+                            alternate_caller_id: ids.alternate(),
+                        },
+                    );
+                    state.secrets.extensions.insert(number, new_password());
+                }
+                ExtensionCommand::Set {
+                    customer,
+                    number,
+                    ids,
+                } => {
+                    ensure!(
+                        ids.primary().is_some() || ids.alternate().is_some() || ids.no_cid2,
+                        "provide a caller ID setting"
+                    );
+                    let extension = customer_mut(state, &customer)?
+                        .extensions
