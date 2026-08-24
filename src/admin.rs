@@ -305,3 +305,25 @@ pub fn trunk(layout: &Layout, command: TrunkCommand, json: bool) -> Result<()> {
                     name,
                     host,
                     port,
+                    max_calls,
+                    signaling,
+                    media,
+                } => {
+                    let trunk = state
+                        .config
+                        .trunks
+                        .get_mut(&name)
+                        .context("unknown trunk")?;
+                    if let Some(value) = host {
+                        trunk.host = value;
+                    }
+                    if let Some(value) = port {
+                        trunk.port = value;
+                    }
+                    if let Some(value) = max_calls {
+                        trunk.max_calls = value;
+                    }
+                    if let Some(value) = signaling {
+                        trunk.signaling = value;
+                    }
+                    if let Some(value) = media {
