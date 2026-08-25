@@ -392,3 +392,25 @@ pub fn pool(layout: &Layout, command: PoolCommand, json: bool) -> Result<()> {
                 println!("{}", numbers.join("\n"));
                 Ok(())
             }
+        }
+        other => edit(layout, json, |state| {
+            match other {
+                PoolCommand::Add { name, numbers } => {
+                    let pool = state
+                        .config
+                        .pools
+                        .entry(name)
+                        .or_insert(Pool { numbers: vec![] });
+                    for number in numbers {
+                        if !pool.numbers.contains(&number) {
+                            pool.numbers.push(number);
+                        }
+                    }
+                }
+                PoolCommand::Import { name, file } => {
+                    let text = fs::read_to_string(file)?;
+                    let mut numbers: Vec<String> = text
+                        .lines()
+                        .map(|s| s.split('#').next().unwrap_or("").trim())
+                        .filter(|s| !s.is_empty())
+                        .map(str::to_owned)
