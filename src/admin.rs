@@ -436,3 +436,25 @@ pub fn pool(layout: &Layout, command: PoolCommand, json: bool) -> Result<()> {
                     ensure!(calls > 0, "per-number limit must be positive");
                     for number in &state
                         .config
+                        .pools
+                        .get(&name)
+                        .context("unknown pool")?
+                        .numbers
+                    {
+                        state.config.caller_id_limits.insert(number.clone(), calls);
+                    }
+                }
+                _ => unreachable!(),
+            }
+            Ok(())
+        }),
+    }
+}
+
+pub fn block(layout: &Layout, command: BlockCommand, json: bool) -> Result<()> {
+    match command {
+        BlockCommand::List => display(&layout.load()?.config.blocked_prefixes, json),
+        command => edit(layout, json, |state| {
+            match command {
+                BlockCommand::Add { prefixes: values } => {
+                    state.config.blocked_prefixes.extend(prefixes(values))
