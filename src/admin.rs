@@ -458,3 +458,20 @@ pub fn block(layout: &Layout, command: BlockCommand, json: bool) -> Result<()> {
             match command {
                 BlockCommand::Add { prefixes: values } => {
                     state.config.blocked_prefixes.extend(prefixes(values))
+                }
+                BlockCommand::Remove { prefixes: values } => {
+                    let values = prefixes(values);
+                    state
+                        .config
+                        .blocked_prefixes
+                        .retain(|p| !values.contains(p));
+                }
+                _ => unreachable!(),
+            }
+            state.config.blocked_prefixes.sort();
+            state.config.blocked_prefixes.dedup();
+            Ok(())
+        }),
+    }
+}
+
