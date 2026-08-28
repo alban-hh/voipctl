@@ -67,3 +67,26 @@ pub fn run(cli: Cli) -> Result<()> {
         }
         Command::Apply {
             adopt_existing,
+            restart,
+        } => {
+            let _lock = layout.lock()?;
+            let state = layout.load()?;
+            let artifacts = render::generate(&state)?;
+            let id = if layout.live() {
+                transaction::apply(
+                    &layout,
+                    &artifacts,
+                    adopt_existing,
+                    &mut LiveServices::new(&layout, &state, restart)?,
+                )?
+            } else {
+                transaction::apply(&layout, &artifacts, adopt_existing, &mut Offline)?
+            };
+            display(
+                &json!({"result":"applied", "checkpoint":id, "mode":if layout.live() { "live" } else { "offline" }}),
+                json,
+            )
+        }
+        Command::Recover { restart } => {
+            let _lock = layout.lock()?;
+            if layout.live() {
