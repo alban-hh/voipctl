@@ -90,3 +90,26 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Recover { restart } => {
             let _lock = layout.lock()?;
             if layout.live() {
+                let state = layout.load()?;
+                let mut services = LiveServices::new(&layout, &state, restart)?;
+                transaction::recover(&layout, &mut services)?;
+            } else {
+                transaction::recover(&layout, &mut Offline)?;
+            }
+            message(
+                "Previous generated files restored. Desired configuration remains staged.",
+                json,
+            )
+        }
+        Command::History => {
+            let directory = layout.path("var/lib/voipctl/history")?;
+            let mut entries = Vec::new();
+            if directory.exists() {
+                for entry in fs::read_dir(directory)? {
+                    let path = entry?.path();
+                    if let Some(id) = path.file_stem().and_then(|s| s.to_str()) {
+                        entries.push(id.to_owned());
+                    }
+                }
+            }
+            entries.sort();
