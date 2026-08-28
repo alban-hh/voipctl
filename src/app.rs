@@ -44,3 +44,26 @@ pub fn run(cli: Cli) -> Result<()> {
             let _lock = layout.lock()?;
             ensure!(
                 !layout.state_path()?.exists(),
+                "migration requires an empty workspace"
+            );
+            let state = migrate::legacy(&from, domain)?;
+            layout.save(&state)?;
+            message(
+                "Legacy configuration imported; source files unchanged. Review show and plan before apply --adopt-existing --restart.",
+                json,
+            )
+        }
+        Command::Show => display(&layout.load()?.config, json),
+        Command::Check => {
+            layout.load()?.validate_activation()?;
+            message(
+                "Configuration and credential references are valid. Run doctor on the target host to check its runtime.",
+                json,
+            )
+        }
+        Command::Plan => {
+            let artifacts = render::generate(&layout.load()?)?;
+            display(&transaction::plan(&layout, &artifacts)?, json)
+        }
+        Command::Apply {
+            adopt_existing,
