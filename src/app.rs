@@ -21,3 +21,26 @@ pub fn run(cli: Cli) -> Result<()> {
             "voipctl",
             &mut std::io::stdout(),
         );
+        return Ok(());
+    }
+    let layout = Layout::new(cli.root)?;
+    let json = cli.json;
+    match cli.command {
+        Command::Init { domain } => {
+            let _lock = layout.lock()?;
+            ensure!(
+                !layout.state_path()?.exists(),
+                "configuration already exists"
+            );
+            let mut state = State::default();
+            state.config.server.domain = domain;
+            layout.save(&state)?;
+            message(
+                "Initialized. Add a trunk, its credentials, a customer, and extensions before applying.",
+                json,
+            )
+        }
+        Command::Migrate { from, domain } => {
+            let _lock = layout.lock()?;
+            ensure!(
+                !layout.state_path()?.exists(),
