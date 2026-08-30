@@ -113,3 +113,26 @@ pub fn run(cli: Cli) -> Result<()> {
                 }
             }
             entries.sort();
+            display(&entries, json)
+        }
+        Command::Rollback { id, restart } => {
+            let _lock = layout.lock()?;
+            let redo = if layout.live() {
+                ensure!(
+                    restart,
+                    "live rollback requires --restart in a maintenance window"
+                );
+                let state = layout.load()?;
+                let mut services = LiveServices::new(&layout, &state, true)?;
+                services.preflight(&render::generate(&state)?)?;
+                transaction::rollback(&layout, &id, &mut services)?
+            } else {
+                transaction::rollback(&layout, &id, &mut Offline)?
+            };
+            display(
+                &json!({"result":"rolled_back", "undo_checkpoint":redo, "desired_configuration":"unchanged; review plan before next apply"}),
+                json,
+            )
+        }
+        Command::Doctor => {
+            let state = layout.load()?;
