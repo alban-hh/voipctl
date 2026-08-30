@@ -136,3 +136,25 @@ pub fn run(cli: Cli) -> Result<()> {
         }
         Command::Doctor => {
             let state = layout.load()?;
+            let artifacts = render::generate(&state)?;
+            if layout.live() {
+                LiveServices::new(&layout, &state, false)?.preflight(&artifacts)?;
+            }
+            display(
+                &json!({"configuration":"valid", "runtime":if layout.live() { "checked" } else { "not checked in offline mode" }, "generated_files":artifacts.len()}),
+                json,
+            )
+        }
+        Command::Status => status(&layout, json),
+        Command::DialCheck {
+            customer,
+            extension,
+            number,
+        } => {
+            let state = layout.load()?;
+            let customer = state
+                .config
+                .customers
+                .get(&customer)
+                .context("unknown customer")?;
+            display(
