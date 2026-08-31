@@ -158,3 +158,26 @@ pub fn run(cli: Cli) -> Result<()> {
                 .get(&customer)
                 .context("unknown customer")?;
             display(
+                &dialing::resolve(&state, customer, &extension, &number)?,
+                json,
+            )
+        }
+        Command::Customer(command) => admin::customer(&layout, command, json),
+        Command::Extension(command) => admin::extension(&layout, command, json),
+        Command::Trunk(command) => admin::trunk(&layout, command, json),
+        Command::Pool(command) => admin::pool(&layout, command, json),
+        Command::Block(command) => admin::block(&layout, command, json),
+        Command::Server(options) => admin::server(&layout, options, json),
+        Command::Firewall { admin } => {
+            let state = layout.load()?;
+            let clients: Vec<_> = state
+                .config
+                .customers
+                .values()
+                .flat_map(|c| c.source_ips.iter().map(ToString::to_string))
+                .collect();
+            let signaling: Vec<_> = state
+                .config
+                .trunks
+                .values()
+                .flat_map(|t| t.signaling.iter().map(ToString::to_string))
