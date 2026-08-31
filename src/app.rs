@@ -181,3 +181,29 @@ pub fn run(cli: Cli) -> Result<()> {
                 .trunks
                 .values()
                 .flat_map(|t| t.signaling.iter().map(ToString::to_string))
+                .collect();
+            let media: Vec<_> = state
+                .config
+                .trunks
+                .values()
+                .flat_map(|t| t.media.iter().map(ToString::to_string))
+                .collect();
+            display(
+                &json!({"policy":"cloud firewall: default-deny inbound; explicitly allow these sources; no changes made",
+                "ssh":{"protocol":"tcp","port":22,"sources":admin},
+                "sip":{"protocol":"udp","port":state.config.server.sip_port,"customer_sources":clients,"carrier_sources":signaling},
+                "rtp":{"protocol":"udp","start":state.config.server.rtp_start,"end":state.config.server.rtp_end,"customer_sources":clients,"carrier_sources":media},
+                "note":"Customers without optional source locks need their source addresses supplied directly in the cloud firewall. Review current carrier ranges before deployment."}),
+                json,
+            )
+        }
+        Command::Cdr {
+            customer,
+            today,
+            summary,
+            limit,
+        } => cdr(&layout, customer, today, summary, limit, json),
+        Command::Completions { .. } => unreachable!(),
+    }
+}
+
