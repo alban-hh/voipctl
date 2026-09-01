@@ -207,3 +207,23 @@ pub fn run(cli: Cli) -> Result<()> {
     }
 }
 
+fn status(layout: &Layout, json_output: bool) -> Result<()> {
+    let state = layout.load()?;
+    let mut result = json!({"customers":state.config.customers.len(), "extensions":state.config.customers.values().map(|c| c.extensions.len()).sum::<usize>(),
+        "trunks":state.config.trunks.len(), "pools":state.config.pools.len(), "mode":if layout.live(){"live"}else{"offline"},
+        "recovery_pending":layout.path("var/lib/voipctl/pending.json")?.exists()});
+    if layout.live() {
+        result["asterisk"] = json!(
+            services::command("/usr/bin/systemctl", &["is-active", "asterisk"])
+                .map(|s| s.trim().to_owned())
+                .unwrap_or_else(|_| "unavailable".into())
+        );
+        result["calls"] = json!(
+            services::asterisk("core show channels count")
+                .map(|s| s.trim().to_owned())
+                .unwrap_or_else(|_| "unavailable".into())
+        );
+    }
+    display(&result, json_output)
+}
+
