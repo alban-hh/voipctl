@@ -250,3 +250,26 @@ fn cdr(
     }
     let filter = if conditions.is_empty() {
         String::new()
+    } else {
+        format!("WHERE {}", conditions.join(" AND "))
+    };
+    let sql = if summary {
+        format!(
+            "SELECT accountcode AS customer,COUNT(*) AS calls,SUM(disposition='ANSWERED') AS answered,SUM(billsec) AS billed_seconds FROM cdr {filter} GROUP BY accountcode ORDER BY accountcode"
+        )
+    } else {
+        format!(
+            "SELECT calldate,accountcode,customer_ext,src,dialed,disposition,billsec,src_ip,userfield FROM cdr {filter} ORDER BY id DESC LIMIT {limit}"
+        )
+    };
+    let result = services::command(
+        "/usr/bin/mariadb",
+        &["--batch", &state.config.server.cdr_database, "-e", &sql],
+    )?;
+    if json_output {
+        display(&json!({"format":"tsv","data":result}), true)
+    } else {
+        print!("{result}");
+        Ok(())
+    }
+}
