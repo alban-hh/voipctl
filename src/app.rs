@@ -227,3 +227,26 @@ fn status(layout: &Layout, json_output: bool) -> Result<()> {
     display(&result, json_output)
 }
 
+fn cdr(
+    layout: &Layout,
+    customer: Option<String>,
+    today: bool,
+    summary: bool,
+    limit: u32,
+    json_output: bool,
+) -> Result<()> {
+    ensure!(
+        layout.live(),
+        "CDR queries require the live database on --root /"
+    );
+    let state = layout.load()?;
+    let mut conditions = Vec::new();
+    if let Some(name) = customer {
+        ensure!(valid_name(&name), "invalid customer name");
+        conditions.push(format!("accountcode='{name}'"));
+    }
+    if today {
+        conditions.push("calldate >= CURDATE()".into());
+    }
+    let filter = if conditions.is_empty() {
+        String::new()
