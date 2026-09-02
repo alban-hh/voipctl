@@ -22,3 +22,24 @@ pub struct Cli {
     pub command: Command,
 }
 
+#[derive(Subcommand)]
+pub enum Command {
+    #[command(about = "Initialize a new configuration without changing Asterisk")]
+    Init {
+        #[arg(long)]
+        domain: String,
+    },
+    #[command(about = "Show configuration without credentials")]
+    Show,
+    #[command(about = "Validate configuration and activation prerequisites in the data model")]
+    Check,
+    #[command(about = "Preview changed file names without exposing credentials")]
+    Plan,
+    #[command(about = "Apply configuration with backups, verification, and automatic recovery")]
+    Apply {
+        #[arg(
+            long,
+            help = "Allow replacement of untracked or manually changed generated files"
+        )]
+        adopt_existing: bool,
+        #[arg(
