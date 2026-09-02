@@ -43,3 +43,26 @@ pub enum Command {
         )]
         adopt_existing: bool,
         #[arg(
+            long,
+            help = "Restart Asterisk for transport changes; refused while channels are active"
+        )]
+        restart: bool,
+    },
+    #[command(about = "List configuration rollback checkpoints")]
+    History,
+    #[command(
+        about = "Restore generated files from a checkpoint; desired configuration stays staged"
+    )]
+    Rollback {
+        id: String,
+        #[arg(long)]
+        restart: bool,
+    },
+    #[command(about = "Recover a transaction interrupted by a crash or failed activation")]
+    Recover {
+        #[arg(long)]
+        restart: bool,
+    },
+    #[command(about = "Check the installed Asterisk runtime and required modules")]
+    Doctor,
+    #[command(about = "Show configured resources and live service status")]
