@@ -89,3 +89,26 @@ pub enum Command {
     #[command(subcommand)]
     Pool(PoolCommand),
     #[command(subcommand)]
+    Block(BlockCommand),
+    #[command(about = "Change server settings; values remain staged until apply")]
+    Server(ServerOptions),
+    #[command(about = "Print cloud firewall requirements; never change host or cloud firewalls")]
+    Firewall {
+        #[arg(long)]
+        admin: Vec<Ipv4Net>,
+    },
+    #[command(about = "Read the existing MariaDB CDR database")]
+    Cdr {
+        #[arg(long)]
+        customer: Option<String>,
+        #[arg(long)]
+        today: bool,
+        #[arg(long)]
+        summary: bool,
+        #[arg(long, default_value_t = 20, value_parser = clap::value_parser!(u32).range(1..=10000))]
+        limit: u32,
+    },
+    #[command(about = "Generate shell completion definitions")]
+    Completions { shell: clap_complete::Shell },
+}
+
