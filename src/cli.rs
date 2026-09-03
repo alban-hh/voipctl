@@ -226,3 +226,24 @@ impl CallerIds {
     }
 }
 
+#[derive(Subcommand)]
+pub enum TrunkCommand {
+    List,
+    Show {
+        name: String,
+    },
+    Add {
+        name: String,
+        #[arg(long)]
+        host: String,
+        #[arg(long, default_value_t = 5060)]
+        port: u16,
+        #[arg(long, default_value_t = 100)]
+        max_calls: u32,
+        #[arg(long)]
+        signaling: Vec<Ipv4Net>,
+        #[arg(long)]
+        media: Vec<Ipv4Net>,
+    },
+    Set {
+        name: String,
