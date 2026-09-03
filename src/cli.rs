@@ -66,3 +66,26 @@ pub enum Command {
     #[command(about = "Check the installed Asterisk runtime and required modules")]
     Doctor,
     #[command(about = "Show configured resources and live service status")]
+    Status,
+    #[command(about = "Import the original Python CLI's /etc/voip directory")]
+    Migrate {
+        #[arg(long)]
+        from: PathBuf,
+        #[arg(long)]
+        domain: String,
+    },
+    #[command(about = "Explain routing and caller ID selection without placing a call")]
+    DialCheck {
+        customer: String,
+        extension: String,
+        number: String,
+    },
+    #[command(subcommand)]
+    Customer(CustomerCommand),
+    #[command(subcommand, name = "ext")]
+    Extension(ExtensionCommand),
+    #[command(subcommand)]
+    Trunk(TrunkCommand),
+    #[command(subcommand)]
+    Pool(PoolCommand),
+    #[command(subcommand)]
