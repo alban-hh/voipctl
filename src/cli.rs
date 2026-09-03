@@ -134,3 +134,28 @@ pub enum CustomerCommand {
         source_ips: Vec<Ipv4Net>,
     },
     Set {
+        name: String,
+        #[arg(long)]
+        trunk: Option<String>,
+        #[arg(long, value_delimiter = ',')]
+        allow: Option<Vec<String>>,
+        #[arg(long)]
+        default_country: Option<String>,
+        #[arg(long, conflicts_with = "default_country")]
+        clear_default_country: bool,
+        #[arg(long)]
+        max_calls: Option<u32>,
+        #[arg(long)]
+        max_seconds: Option<u32>,
+        #[arg(long = "source-ip", conflicts_with = "clear_source_ips")]
+        source_ips: Option<Vec<Ipv4Net>>,
+        #[arg(long)]
+        clear_source_ips: bool,
+    },
+    Remove {
+        name: String,
+        #[arg(long, required = true)]
+        yes: bool,
+    },
+}
+
