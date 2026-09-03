@@ -112,3 +112,25 @@ pub enum Command {
     Completions { shell: clap_complete::Shell },
 }
 
+#[derive(Subcommand)]
+pub enum CustomerCommand {
+    List,
+    Show {
+        name: String,
+    },
+    Add {
+        name: String,
+        #[arg(long)]
+        trunk: String,
+        #[arg(long, value_delimiter = ',', required = true)]
+        allow: Vec<String>,
+        #[arg(long)]
+        default_country: Option<String>,
+        #[arg(long, default_value_t = 2)]
+        max_calls: u32,
+        #[arg(long, default_value_t = 3600)]
+        max_seconds: u32,
+        #[arg(long = "source-ip")]
+        source_ips: Vec<Ipv4Net>,
+    },
+    Set {
