@@ -159,3 +159,23 @@ pub enum CustomerCommand {
     },
 }
 
+#[derive(Subcommand)]
+pub enum ExtensionCommand {
+    List {
+        customer: String,
+    },
+    Show {
+        customer: String,
+        number: String,
+        #[arg(long, help = "Explicitly print the SIP password")]
+        reveal: bool,
+    },
+    Add {
+        customer: String,
+        number: String,
+        #[command(flatten)]
+        ids: CallerIds,
+    },
+    Set {
+        customer: String,
+        number: String,
