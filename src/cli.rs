@@ -179,3 +179,23 @@ pub enum ExtensionCommand {
     Set {
         customer: String,
         number: String,
+        #[command(flatten)]
+        ids: CallerIds,
+    },
+    Passwd {
+        customer: String,
+        number: String,
+        #[arg(
+            long,
+            help = "Read a password from standard input instead of generating one"
+        )]
+        password_stdin: bool,
+    },
+    Remove {
+        customer: String,
+        number: String,
+        #[arg(long, required = true)]
+        yes: bool,
+    },
+}
+
