@@ -199,3 +199,30 @@ pub enum ExtensionCommand {
     },
 }
 
+#[derive(Args)]
+pub struct CallerIds {
+    #[arg(long, conflicts_with = "pool")]
+    pub cid: Option<String>,
+    #[arg(long)]
+    pub pool: Option<String>,
+    #[arg(long, conflicts_with_all = ["pool2", "no_cid2"])]
+    pub cid2: Option<String>,
+    #[arg(long, conflicts_with = "no_cid2")]
+    pub pool2: Option<String>,
+    #[arg(long)]
+    pub no_cid2: bool,
+}
+
+impl CallerIds {
+    pub fn primary(&self) -> Option<String> {
+        self.cid
+            .clone()
+            .or_else(|| self.pool.as_ref().map(|p| format!("pool:{p}")))
+    }
+    pub fn alternate(&self) -> Option<String> {
+        self.cid2
+            .clone()
+            .or_else(|| self.pool2.as_ref().map(|p| format!("pool:{p}")))
+    }
+}
+
