@@ -293,3 +293,27 @@ pub enum PoolCommand {
     },
     Remove {
         name: String,
+        numbers: Vec<String>,
+        #[arg(long)]
+        yes: bool,
+    },
+    Limit {
+        name: String,
+        #[arg(help = "Concurrent calls per number, shared across all customers")]
+        calls: u32,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum BlockCommand {
+    List,
+    Add {
+        #[arg(required = true)]
+        prefixes: Vec<String>,
+    },
+    Remove {
+        #[arg(required = true)]
+        prefixes: Vec<String>,
+    },
+}
+
