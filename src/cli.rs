@@ -273,3 +273,23 @@ pub enum TrunkCommand {
     },
 }
 
+#[derive(Subcommand)]
+pub enum PoolCommand {
+    List,
+    Show {
+        name: String,
+    },
+    Add {
+        name: String,
+        #[arg(required = true)]
+        numbers: Vec<String>,
+    },
+    Import {
+        name: String,
+        file: PathBuf,
+    },
+    Export {
+        name: String,
+    },
+    Remove {
+        name: String,
