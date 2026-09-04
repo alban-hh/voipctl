@@ -247,3 +247,29 @@ pub enum TrunkCommand {
     },
     Set {
         name: String,
+        #[arg(long)]
+        host: Option<String>,
+        #[arg(long)]
+        port: Option<u16>,
+        #[arg(long)]
+        max_calls: Option<u32>,
+        #[arg(long)]
+        signaling: Option<Vec<Ipv4Net>>,
+        #[arg(long)]
+        media: Option<Vec<Ipv4Net>>,
+    },
+    Credentials {
+        name: String,
+        #[arg(
+            long,
+            help = "Read a JSON object with username and password from standard input"
+        )]
+        stdin: bool,
+    },
+    Remove {
+        name: String,
+        #[arg(long, required = true)]
+        yes: bool,
+    },
+}
+
