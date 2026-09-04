@@ -317,3 +317,24 @@ pub enum BlockCommand {
     },
 }
 
+#[derive(Args)]
+pub struct ServerOptions {
+    #[arg(long)]
+    pub domain: Option<String>,
+    #[arg(long)]
+    pub bind_address: Option<std::net::Ipv4Addr>,
+    #[arg(long)]
+    pub sip_port: Option<u16>,
+    #[arg(long)]
+    pub rtp_start: Option<u16>,
+    #[arg(long)]
+    pub rtp_end: Option<u16>,
+    #[arg(long)]
+    pub dial_timeout: Option<u32>,
+    #[arg(long)]
+    pub max_calls_per_number: Option<u32>,
+    #[arg(long, action = clap::ArgAction::Set)]
+    pub manage_fail2ban: Option<bool>,
+    #[arg(long)]
+    pub cdr_database: Option<String>,
+}
