@@ -67,3 +67,26 @@ pub fn legacy(directory: &Path, domain: String) -> Result<State> {
                 .lines()
                 .map(body)
                 .filter(|s| !s.is_empty())
+                .map(|s| s.replace(' ', ""))
+                .collect();
+            numbers.sort();
+            numbers.dedup();
+            state.config.pools.insert(name, Pool { numbers });
+        }
+    }
+    let customers = directory.join("customers");
+    if customers.is_dir() {
+        for entry in fs::read_dir(customers)? {
+            let path = entry?.path();
+            if path.extension().and_then(|s| s.to_str()) != Some("conf") {
+                continue;
+            }
+            let name = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .context("invalid legacy customer filename")?
+                .to_owned();
+            let sections = ini(&path)?;
+            let values = sections
+                .get("customer")
+                .context("missing legacy customer section")?;
