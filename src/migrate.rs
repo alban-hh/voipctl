@@ -113,3 +113,26 @@ pub fn legacy(directory: &Path, domain: String) -> Result<State> {
                 default_country: values
                     .get("default_country")
                     .filter(|v| !v.is_empty())
+                    .cloned(),
+                source_ips: vec![],
+                extensions: BTreeMap::new(),
+            };
+            for (section, values) in &sections {
+                if section == "customer" {
+                    continue;
+                }
+                let number = section
+                    .strip_prefix("ext ")
+                    .context("unrecognized legacy section")?
+                    .trim()
+                    .to_owned();
+                ensure!(
+                    !state.secrets.extensions.contains_key(&number),
+                    "duplicate legacy extension"
+                );
+                customer.extensions.insert(
+                    number.clone(),
+                    Extension {
+                        caller_id: required(values, "cid")?.into(),
+                        alternate_caller_id: values.get("cid2").filter(|v| !v.is_empty()).cloned(),
+                    },
