@@ -44,3 +44,26 @@ pub fn legacy(directory: &Path, domain: String) -> Result<State> {
             .get("telnyx")
             .context("missing legacy credential section")?;
         state.secrets.trunks.insert(
+            "telnyx".into(),
+            Credentials {
+                username: required(values, "username")?.into(),
+                password: required(values, "password")?.into(),
+            },
+        );
+    }
+    let pools = directory.join("cidpools");
+    if pools.is_dir() {
+        for entry in fs::read_dir(pools)? {
+            let path = entry?.path();
+            if path.extension().and_then(|s| s.to_str()) != Some("txt") {
+                continue;
+            }
+            let name = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .context("invalid legacy pool filename")?
+                .to_owned();
+            let mut numbers: Vec<_> = fs::read_to_string(path)?
+                .lines()
+                .map(body)
+                .filter(|s| !s.is_empty())
