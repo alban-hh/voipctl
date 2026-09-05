@@ -21,3 +21,26 @@ pub fn legacy(directory: &Path, domain: String) -> Result<State> {
         .lines()
     {
         let words: Vec<&str> = body(raw).split_whitespace().collect();
+        if words.is_empty() {
+            continue;
+        }
+        ensure!(words.len() == 2, "invalid legacy trunk configuration");
+        match words[0] {
+            "host" => {
+                let (host, port) = words[1].split_once(':').unwrap_or((words[1], "5060"));
+                trunk.host = host.into();
+                trunk.port = port.parse()?;
+            }
+            "signaling" => trunk.signaling.push(network(words[1])?),
+            "media" => trunk.media.push(network(words[1])?),
+            _ => bail!("unknown legacy trunk setting"),
+        }
+    }
+    state.config.trunks.insert("telnyx".into(), trunk);
+    let credentials = directory.join("secrets/telnyx.conf");
+    if credentials.exists() {
+        let sections = ini(&credentials)?;
+        let values = sections
+            .get("telnyx")
+            .context("missing legacy credential section")?;
+        state.secrets.trunks.insert(
