@@ -90,3 +90,26 @@ pub fn legacy(directory: &Path, domain: String) -> Result<State> {
             let values = sections
                 .get("customer")
                 .context("missing legacy customer section")?;
+            let mut customer = Customer {
+                trunk: "telnyx".into(),
+                max_calls: values
+                    .get("max_calls")
+                    .map(String::as_str)
+                    .unwrap_or("2")
+                    .parse()?,
+                max_call_seconds: values
+                    .get("max_call_seconds")
+                    .map(String::as_str)
+                    .unwrap_or("3600")
+                    .parse()?,
+                allowed_prefixes: values
+                    .get("allowed_prefixes")
+                    .cloned()
+                    .unwrap_or_default()
+                    .replace(',', " ")
+                    .split_whitespace()
+                    .map(|s| s.trim_start_matches('+').to_owned())
+                    .collect(),
+                default_country: values
+                    .get("default_country")
+                    .filter(|v| !v.is_empty())
