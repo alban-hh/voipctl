@@ -136,3 +136,26 @@ pub fn legacy(directory: &Path, domain: String) -> Result<State> {
                         caller_id: required(values, "cid")?.into(),
                         alternate_caller_id: values.get("cid2").filter(|v| !v.is_empty()).cloned(),
                     },
+                );
+                state
+                    .secrets
+                    .extensions
+                    .insert(number, required(values, "password")?.into());
+            }
+            state.config.customers.insert(name, customer);
+        }
+    }
+    let whitelist = directory.join("whitelist.conf");
+    if whitelist.exists() {
+        for line in fs::read_to_string(whitelist)?.lines() {
+            let words: Vec<_> = body(line).split_whitespace().collect();
+            if words.is_empty() {
+                continue;
+            }
+            ensure!(words.len() == 2, "invalid legacy whitelist row");
+            if let Some(customer) = words[1].strip_prefix("customer:") {
+                state
+                    .config
+                    .customers
+                    .get_mut(customer)
+                    .context("legacy source lock refers to a missing customer")?
