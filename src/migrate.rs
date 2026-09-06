@@ -159,3 +159,27 @@ pub fn legacy(directory: &Path, domain: String) -> Result<State> {
                     .customers
                     .get_mut(customer)
                     .context("legacy source lock refers to a missing customer")?
+                    .source_ips
+                    .push(network(words[0])?);
+            } else {
+                ensure!(words[1] == "admin", "unknown legacy whitelist role");
+            }
+        }
+    }
+    let blocked = directory.join("blocked_prefixes.conf");
+    if blocked.exists() {
+        state.config.blocked_prefixes = fs::read_to_string(blocked)?
+            .lines()
+            .map(body)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.trim_start_matches('+').to_owned())
+            .collect();
+    }
+    state.validate()?;
+    Ok(state)
+}
+
+fn body(line: &str) -> &str {
+    line.split('#').next().unwrap_or("").trim()
+}
+
