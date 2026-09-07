@@ -205,3 +205,26 @@ fn ini(path: &Path) -> Result<Sections> {
     for raw in text.lines() {
         let line = raw.trim();
         if line.is_empty() || line.starts_with(['#', ';']) {
+            continue;
+        }
+        if line.starts_with('[') && line.ends_with(']') {
+            section = line[1..line.len() - 1].to_owned();
+            ensure!(!sections.contains_key(&section), "duplicate legacy section");
+            sections.insert(section.clone(), BTreeMap::new());
+        } else {
+            let (key, value) = line
+                .split_once('=')
+                .context("invalid legacy key-value row")?;
+            let values = sections
+                .get_mut(&section)
+                .context("legacy value outside a section")?;
+            ensure!(
+                values
+                    .insert(key.trim().to_owned(), value.trim().to_owned())
+                    .is_none(),
+                "duplicate legacy key"
+            );
+        }
+    }
+    Ok(sections)
+}
