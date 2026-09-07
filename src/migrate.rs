@@ -183,3 +183,25 @@ fn body(line: &str) -> &str {
     line.split('#').next().unwrap_or("").trim()
 }
 
+fn network(value: &str) -> Result<Ipv4Net> {
+    if value.contains('/') {
+        Ok(value.parse()?)
+    } else {
+        Ok(format!("{value}/32").parse()?)
+    }
+}
+
+fn required<'a>(values: &'a BTreeMap<String, String>, key: &str) -> Result<&'a str> {
+    values
+        .get(key)
+        .map(String::as_str)
+        .with_context(|| format!("missing legacy {key}"))
+}
+
+fn ini(path: &Path) -> Result<Sections> {
+    let text = fs::read_to_string(path)?;
+    let mut sections = Sections::new();
+    let mut section = String::new();
+    for raw in text.lines() {
+        let line = raw.trim();
+        if line.is_empty() || line.starts_with(['#', ';']) {
