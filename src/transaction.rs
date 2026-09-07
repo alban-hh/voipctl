@@ -235,3 +235,68 @@ pub fn recover(layout: &Layout, activator: &mut dyn Activator) -> Result<()> {
     fs::remove_file(path)?;
     Ok(())
 }
+
+pub fn rollback(layout: &Layout, id: &str, activator: &mut dyn Activator) -> Result<String> {
+    ensure!(
+        !id.is_empty() && id.bytes().all(|b| b.is_ascii_digit()),
+        "invalid checkpoint identifier"
+    );
+    ensure!(
+        !layout.path("var/lib/voipctl/pending.json")?.exists(),
+        "recover the interrupted transaction first"
+    );
+    let checkpoint = layout.path(&format!("var/lib/voipctl/history/{id}.json"))?;
+    let target: Snapshot =
+        serde_json::from_slice(&fs::read(checkpoint).context("checkpoint not found")?)?;
+    let mut files = Vec::new();
+    for old in &target.files {
+        let path = layout.path(&old.path)?;
+        let metadata = fs::metadata(&path).ok();
+        files.push(FileVersion {
+            path: old.path.clone(),
+            content: if path.exists() {
+                Some(fs::read_to_string(&path)?)
+            } else {
+                None
+            },
+            mode: metadata
+                .as_ref()
+                .map_or(old.mode, |m| m.permissions().mode() & 0o777),
+            uid: metadata.as_ref().map_or(0, MetadataExt::uid),
+            gid: metadata.as_ref().map_or(0, MetadataExt::gid),
+        });
+    }
+    let manifest_path = layout.path("var/lib/voipctl/manifest.json")?;
+    let current = Snapshot {
+        id: SystemTime::now()
+            .duration_since(UNIX_EPOCH)?
+            .as_nanos()
+            .to_string(),
+        files,
+        manifest: if manifest_path.exists() {
+            Some(fs::read_to_string(manifest_path)?)
+        } else {
+            None
+        },
+    };
+    let encoded = serde_json::to_vec(&current)?;
+    atomic_write(
+        &layout.path(&format!("var/lib/voipctl/history/{}.json", current.id))?,
+        &encoded,
+        0o600,
+        None,
+    )?;
+    let pending = layout.path("var/lib/voipctl/pending.json")?;
+    atomic_write(&pending, &encoded, 0o600, None)?;
+    if let Err(error) = restore(layout, &target)
+        .and_then(|_| activator.activate())
+        .and_then(|_| activator.verify())
+    {
+        if let Err(recovery) = recover(layout, activator) {
+            bail!("rollback failed: {error:#}; recovery failed: {recovery:#}; journal retained");
+        }
+        bail!("rollback failed: {error:#}; previous files restored");
+    }
+    fs::remove_file(pending)?;
+    Ok(current.id)
+}
