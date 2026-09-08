@@ -157,3 +157,10 @@ pub fn atomic_write(
     File::open(parent)?.sync_all()?;
     Ok(())
 }
+
+pub fn durable_remove(path: &Path) -> Result<()> {
+    reject_symlinks(path)?;
+    fs::remove_file(path)?;
+    File::open(path.parent().context("managed file has no parent")?)?.sync_all()?;
+    Ok(())
+}
