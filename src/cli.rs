@@ -80,15 +80,28 @@ pub enum Command {
         extension: String,
         number: String,
     },
-    #[command(subcommand)]
+    #[command(
+        subcommand,
+        about = "Manage customer destinations, limits, and source locks"
+    )]
     Customer(CustomerCommand),
-    #[command(subcommand, name = "ext")]
+    #[command(
+        subcommand,
+        name = "ext",
+        about = "Manage SIP extensions, caller IDs, and passwords"
+    )]
     Extension(ExtensionCommand),
-    #[command(subcommand)]
+    #[command(subcommand, about = "Manage credential-based outbound SIP trunks")]
     Trunk(TrunkCommand),
-    #[command(subcommand)]
+    #[command(
+        subcommand,
+        about = "Manage caller ID pools and per-number call limits"
+    )]
     Pool(PoolCommand),
-    #[command(subcommand)]
+    #[command(
+        subcommand,
+        about = "Manage destination prefixes blocked for every customer"
+    )]
     Block(BlockCommand),
     #[command(about = "Change server settings; values remain staged until apply")]
     Server(ServerOptions),
