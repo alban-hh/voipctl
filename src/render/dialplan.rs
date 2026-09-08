@@ -134,8 +134,7 @@ pub fn render(state: &State) -> String {
                 &format!(
                     "Dial(PJSIP/${{DEST}}@trunk-{},{})",
                     customer.trunk, state.config.server.dial_timeout
-                )
-                .as_str(),
+                ),
             );
             line(&mut output, "Set(CDR_PROP(disable)=1)");
             line(&mut output, "Hangup()");
