@@ -43,3 +43,26 @@ fn invalid_customer_creation_leaves_no_partial_configuration() {
         invoke(
             &layout,
             &[
+                "customer",
+                "add",
+                "other",
+                "--trunk",
+                "carrier",
+                "--allow",
+                "355",
+                "--max-calls",
+                "0"
+            ]
+        )
+        .is_err()
+    );
+    assert_eq!(fs::read(layout.state_path().unwrap()).unwrap(), before);
+}
+
+#[test]
+fn duplicate_extension_numbers_are_rejected_across_customers() {
+    let (_directory, layout) = workspace();
+    invoke(
+        &layout,
+        &["ext", "add", "main", "101", "--cid", "+12025550100"],
+    )
