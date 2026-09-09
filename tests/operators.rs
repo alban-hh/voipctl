@@ -21,3 +21,25 @@ fn workspace() -> (tempfile::TempDir, Layout) {
         &layout,
         &[
             "customer",
+            "add",
+            "main",
+            "--trunk",
+            "carrier",
+            "--allow",
+            "355,1",
+            "--default-country",
+            "355",
+        ],
+    )
+    .unwrap();
+    (directory, layout)
+}
+
+#[test]
+fn invalid_customer_creation_leaves_no_partial_configuration() {
+    let (_directory, layout) = workspace();
+    let before = fs::read(layout.state_path().unwrap()).unwrap();
+    assert!(
+        invoke(
+            &layout,
+            &[
