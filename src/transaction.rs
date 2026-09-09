@@ -1,6 +1,6 @@
 use crate::{
     render::Artifact,
-    storage::{Layout, atomic_write, private_directory},
+    storage::{Layout, atomic_write, durable_remove, private_directory},
 };
 use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
@@ -185,7 +185,7 @@ pub fn apply(
             .and_then(|_| activator.verify());
         match recovery {
             Ok(()) => {
-                fs::remove_file(pending)?;
+                durable_remove(&pending)?;
                 bail!("apply failed: {error:#}; previous files and services restored");
             }
             Err(recovery_error) => bail!(
@@ -193,11 +193,12 @@ pub fn apply(
             ),
         }
     }
-    fs::remove_file(pending)?;
+    durable_remove(&pending)?;
     Ok(id)
 }
 
 pub fn restore(layout: &Layout, snapshot: &Snapshot) -> Result<()> {
+    layout.require_write_access()?;
     for file in &snapshot.files {
         ensure!(
             file.path.starts_with("etc/asterisk/")
@@ -213,30 +214,32 @@ pub fn restore(layout: &Layout, snapshot: &Snapshot) -> Result<()> {
                 layout.live().then_some((file.uid, file.gid)),
             )?;
         } else if path.exists() {
-            fs::remove_file(path)?;
+            durable_remove(&path)?;
         }
     }
     let path = layout.path("var/lib/voipctl/manifest.json")?;
     if let Some(manifest) = &snapshot.manifest {
         atomic_write(&path, manifest.as_bytes(), 0o600, None)?;
     } else if path.exists() {
-        fs::remove_file(path)?;
+        durable_remove(&path)?;
     }
     Ok(())
 }
 
 pub fn recover(layout: &Layout, activator: &mut dyn Activator) -> Result<()> {
+    layout.require_write_access()?;
     let path = layout.path("var/lib/voipctl/pending.json")?;
     let snapshot: Snapshot =
         serde_json::from_slice(&fs::read(&path).context("no interrupted transaction")?)?;
     restore(layout, &snapshot)?;
     activator.activate()?;
     activator.verify()?;
-    fs::remove_file(path)?;
+    durable_remove(&path)?;
     Ok(())
 }
 
 pub fn rollback(layout: &Layout, id: &str, activator: &mut dyn Activator) -> Result<String> {
+    layout.require_write_access()?;
     ensure!(
         !id.is_empty() && id.bytes().all(|b| b.is_ascii_digit()),
         "invalid checkpoint identifier"
@@ -297,6 +300,6 @@ pub fn rollback(layout: &Layout, id: &str, activator: &mut dyn Activator) -> Res
         }
         bail!("rollback failed: {error:#}; previous files restored");
     }
-    fs::remove_file(pending)?;
+    durable_remove(&pending)?;
     Ok(current.id)
 }
