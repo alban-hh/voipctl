@@ -85,3 +85,31 @@ fn duplicate_extension_numbers_are_rejected_across_customers() {
     assert_eq!(fs::read(layout.state_path().unwrap()).unwrap(), before);
 }
 
+#[test]
+fn removing_an_extension_removes_its_credential() {
+    let (_directory, layout) = workspace();
+    invoke(
+        &layout,
+        &["ext", "add", "main", "101", "--cid", "+12025550100"],
+    )
+    .unwrap();
+    invoke(&layout, &["ext", "remove", "main", "101", "--yes"]).unwrap();
+    let state = layout.load().unwrap();
+    assert!(state.secrets.extensions.is_empty());
+    assert!(state.config.customers["main"].extensions.is_empty());
+}
+
+#[test]
+fn removing_a_customer_removes_all_its_credentials() {
+    let (_directory, layout) = workspace();
+    for extension in ["101", "102"] {
+        invoke(
+            &layout,
+            &["ext", "add", "main", extension, "--cid", "+12025550100"],
+        )
+        .unwrap();
+    }
+    invoke(&layout, &["customer", "remove", "main", "--yes"]).unwrap();
+    assert!(layout.load().unwrap().secrets.extensions.is_empty());
+}
+
