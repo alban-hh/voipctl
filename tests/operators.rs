@@ -66,3 +66,22 @@ fn duplicate_extension_numbers_are_rejected_across_customers() {
         &layout,
         &["ext", "add", "main", "101", "--cid", "+12025550100"],
     )
+    .unwrap();
+    invoke(
+        &layout,
+        &[
+            "customer", "add", "other", "--trunk", "carrier", "--allow", "1",
+        ],
+    )
+    .unwrap();
+    let before = fs::read(layout.state_path().unwrap()).unwrap();
+    assert!(
+        invoke(
+            &layout,
+            &["ext", "add", "other", "101", "--cid", "+12025550101"]
+        )
+        .is_err()
+    );
+    assert_eq!(fs::read(layout.state_path().unwrap()).unwrap(), before);
+}
+
