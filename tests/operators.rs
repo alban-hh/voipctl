@@ -157,3 +157,26 @@ fn alternate_caller_id_can_be_changed_and_removed() {
         &[
             "ext",
             "add",
+            "main",
+            "101",
+            "--cid",
+            "+12025550100",
+            "--cid2",
+            "+12025550101",
+        ],
+    )
+    .unwrap();
+    invoke(&layout, &["ext", "set", "main", "101", "--no-cid2"]).unwrap();
+    assert!(
+        layout.load().unwrap().config.customers["main"].extensions["101"]
+            .alternate_caller_id
+            .is_none()
+    );
+}
+
+#[test]
+fn password_rotation_preserves_other_extension_settings() {
+    let (_directory, layout) = workspace();
+    invoke(
+        &layout,
+        &["ext", "add", "main", "101", "--cid", "+12025550100"],
