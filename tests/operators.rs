@@ -113,3 +113,25 @@ fn removing_a_customer_removes_all_its_credentials() {
     assert!(layout.load().unwrap().secrets.extensions.is_empty());
 }
 
+#[test]
+fn referenced_pools_cannot_be_deleted_or_emptied() {
+    let (_directory, layout) = workspace();
+    invoke(&layout, &["pool", "add", "us", "+12025550100"]).unwrap();
+    invoke(&layout, &["ext", "add", "main", "101", "--pool", "us"]).unwrap();
+    assert!(invoke(&layout, &["pool", "remove", "us", "--yes"]).is_err());
+    assert!(invoke(&layout, &["pool", "remove", "us", "+12025550100"]).is_err());
+    assert_eq!(layout.load().unwrap().config.pools["us"].numbers.len(), 1);
+}
+
+#[test]
+fn adding_duplicate_pool_numbers_does_not_bias_selection() {
+    let (_directory, layout) = workspace();
+    invoke(
+        &layout,
+        &["pool", "add", "us", "+12025550100", "+12025550100"],
+    )
+    .unwrap();
+    invoke(&layout, &["pool", "add", "us", "+12025550100"]).unwrap();
+    assert_eq!(layout.load().unwrap().config.pools["us"].numbers.len(), 1);
+}
+
