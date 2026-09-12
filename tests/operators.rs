@@ -135,3 +135,25 @@ fn adding_duplicate_pool_numbers_does_not_bias_selection() {
     assert_eq!(layout.load().unwrap().config.pools["us"].numbers.len(), 1);
 }
 
+#[test]
+fn per_number_limits_are_shared_across_pools() {
+    let (_directory, layout) = workspace();
+    invoke(
+        &layout,
+        &["pool", "add", "us", "+12025550100", "+12025550101"],
+    )
+    .unwrap();
+    invoke(&layout, &["pool", "limit", "us", "2"]).unwrap();
+    let state = layout.load().unwrap();
+    assert_eq!(state.config.caller_id_limits["+12025550100"], 2);
+    assert_eq!(state.config.caller_id_limits["+12025550101"], 2);
+}
+
+#[test]
+fn alternate_caller_id_can_be_changed_and_removed() {
+    let (_directory, layout) = workspace();
+    invoke(
+        &layout,
+        &[
+            "ext",
+            "add",
