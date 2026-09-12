@@ -180,3 +180,25 @@ fn password_rotation_preserves_other_extension_settings() {
     invoke(
         &layout,
         &["ext", "add", "main", "101", "--cid", "+12025550100"],
+    )
+    .unwrap();
+    let before = layout.load().unwrap();
+    invoke(&layout, &["ext", "passwd", "main", "101"]).unwrap();
+    let after = layout.load().unwrap();
+    assert_ne!(
+        before.secrets.extensions["101"],
+        after.secrets.extensions["101"]
+    );
+    assert_eq!(
+        after.config.customers["main"].extensions["101"].caller_id,
+        "+12025550100"
+    );
+}
+
+#[test]
+fn in_use_trunks_cannot_be_removed() {
+    let (_directory, layout) = workspace();
+    assert!(invoke(&layout, &["trunk", "remove", "carrier", "--yes"]).is_err());
+    assert!(layout.load().unwrap().config.trunks.contains_key("carrier"));
+}
+
