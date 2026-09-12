@@ -202,3 +202,26 @@ fn in_use_trunks_cannot_be_removed() {
     assert!(layout.load().unwrap().config.trunks.contains_key("carrier"));
 }
 
+#[test]
+fn edits_stop_while_recovery_is_pending() {
+    let (_directory, layout) = workspace();
+    let before = fs::read(layout.state_path().unwrap()).unwrap();
+    fs::write(layout.path("var/lib/voipctl/pending.json").unwrap(), "{}").unwrap();
+    assert!(invoke(&layout, &["server", "--domain", "other.example.com"]).is_err());
+    assert_eq!(fs::read(layout.state_path().unwrap()).unwrap(), before);
+}
+
+#[test]
+fn reinitialization_never_overwrites_configuration() {
+    let (_directory, layout) = workspace();
+    let before = fs::read(layout.state_path().unwrap()).unwrap();
+    assert!(invoke(&layout, &["init", "--domain", "other.example.com"]).is_err());
+    assert_eq!(fs::read(layout.state_path().unwrap()).unwrap(), before);
+}
+
+#[test]
+fn malformed_configuration_errors_do_not_disclose_input() {
+    let (_directory, layout) = workspace();
+    fs::write(
+        layout.state_path().unwrap(),
+        "sensitive_value = [BROKEN_PRIVATE_VALUE",
