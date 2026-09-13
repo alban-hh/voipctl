@@ -225,3 +225,26 @@ fn malformed_configuration_errors_do_not_disclose_input() {
     fs::write(
         layout.state_path().unwrap(),
         "sensitive_value = [BROKEN_PRIVATE_VALUE",
+    )
+    .unwrap();
+    let error = layout.load().err().unwrap().to_string();
+    assert!(!error.contains("BROKEN_PRIVATE_VALUE"));
+}
+
+#[test]
+fn invalid_server_changes_are_not_saved() {
+    let (_directory, layout) = workspace();
+    let before = fs::read(layout.state_path().unwrap()).unwrap();
+    assert!(invoke(&layout, &["server", "--sip-port", "10001"]).is_err());
+    assert_eq!(fs::read(layout.state_path().unwrap()).unwrap(), before);
+}
+
+#[test]
+fn clear_options_remove_country_and_source_locks() {
+    let (_directory, layout) = workspace();
+    invoke(
+        &layout,
+        &["customer", "set", "main", "--source-ip", "192.0.2.1/32"],
+    )
+    .unwrap();
+    invoke(
