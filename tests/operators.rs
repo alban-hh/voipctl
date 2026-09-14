@@ -270,3 +270,26 @@ fn contradictory_flags_are_rejected_by_the_parser() {
             "voipctl",
             "ext",
             "add",
+            "main",
+            "101",
+            "--cid",
+            "+12025550100",
+            "--pool",
+            "us",
+        ],
+        vec![
+            "voipctl",
+            "ext",
+            "set",
+            "main",
+            "101",
+            "--cid2",
+            "+12025550100",
+            "--no-cid2",
+        ],
+        vec!["voipctl", "customer", "remove", "main"],
+        vec!["voipctl", "cdr", "--limit", "0"],
+    ] {
+        assert!(Cli::try_parse_from(args).is_err());
+    }
+}
