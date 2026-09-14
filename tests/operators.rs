@@ -248,3 +248,25 @@ fn clear_options_remove_country_and_source_locks() {
     )
     .unwrap();
     invoke(
+        &layout,
+        &[
+            "customer",
+            "set",
+            "main",
+            "--clear-source-ips",
+            "--clear-default-country",
+        ],
+    )
+    .unwrap();
+    let state: State = layout.load().unwrap();
+    assert!(state.config.customers["main"].source_ips.is_empty());
+    assert!(state.config.customers["main"].default_country.is_none());
+}
+
+#[test]
+fn contradictory_flags_are_rejected_by_the_parser() {
+    for args in [
+        vec![
+            "voipctl",
+            "ext",
+            "add",
