@@ -72,3 +72,27 @@ pub fn customer(layout: &Layout, command: CustomerCommand, json: bool) -> Result
                     }
                     if let Some(value) = max_seconds {
                         customer.max_call_seconds = value;
+                    }
+                    if let Some(value) = source_ips {
+                        customer.source_ips = value;
+                    }
+                    if clear_source_ips {
+                        customer.source_ips.clear();
+                    }
+                }
+                CustomerCommand::Remove { name, .. } => {
+                    let customer = state
+                        .config
+                        .customers
+                        .remove(&name)
+                        .context("unknown customer")?;
+                    for extension in customer.extensions.keys() {
+                        state.secrets.extensions.remove(extension);
+                    }
+                }
+                _ => unreachable!(),
+            }
+            Ok(())
+        }),
+    }
+}
