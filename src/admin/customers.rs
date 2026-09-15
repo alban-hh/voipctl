@@ -22,3 +22,28 @@ pub fn customer(layout: &Layout, command: CustomerCommand, json: bool) -> Result
                     trunk,
                     allow,
                     default_country,
+                    max_calls,
+                    max_seconds,
+                    source_ips,
+                } => {
+                    ensure!(
+                        !state.config.customers.contains_key(&name),
+                        "customer already exists"
+                    );
+                    state.config.customers.insert(
+                        name,
+                        Customer {
+                            trunk,
+                            allowed_prefixes: prefixes(allow),
+                            default_country,
+                            max_calls,
+                            max_call_seconds: max_seconds,
+                            source_ips,
+                            extensions: BTreeMap::new(),
+                        },
+                    );
+                }
+                CustomerCommand::Set {
+                    name,
+                    trunk,
+                    allow,
