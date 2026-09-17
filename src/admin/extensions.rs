@@ -71,3 +71,28 @@ pub fn extension(layout: &Layout, command: ExtensionCommand, json: bool) -> Resu
                     ensure!(
                         ids.primary().is_some() || ids.alternate().is_some() || ids.no_cid2,
                         "provide a caller ID setting"
+                    );
+                    let extension = customer_mut(state, &customer)?
+                        .extensions
+                        .get_mut(&number)
+                        .context("unknown extension")?;
+                    if let Some(value) = ids.primary() {
+                        extension.caller_id = value;
+                    }
+                    if let Some(value) = ids.alternate() {
+                        extension.alternate_caller_id = Some(value);
+                    }
+                    if ids.no_cid2 {
+                        extension.alternate_caller_id = None;
+                    }
+                }
+                ExtensionCommand::Passwd {
+                    customer,
+                    number,
+                    password_stdin,
+                } => {
+                    ensure!(
+                        customer_mut(state, &customer)?
+                            .extensions
+                            .contains_key(&number),
+                        "unknown extension"
