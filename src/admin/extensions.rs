@@ -96,3 +96,27 @@ pub fn extension(layout: &Layout, command: ExtensionCommand, json: bool) -> Resu
                             .extensions
                             .contains_key(&number),
                         "unknown extension"
+                    );
+                    let password = if password_stdin {
+                        read_stdin()?.trim_end_matches(['\r', '\n']).to_owned()
+                    } else {
+                        new_password()
+                    };
+                    validate_secret(&password, 16)?;
+                    state.secrets.extensions.insert(number, password);
+                }
+                ExtensionCommand::Remove {
+                    customer, number, ..
+                } => {
+                    customer_mut(state, &customer)?
+                        .extensions
+                        .remove(&number)
+                        .context("unknown extension")?;
+                    state.secrets.extensions.remove(&number);
+                }
+                _ => unreachable!(),
+            }
+            Ok(())
+        }),
+    }
+}
