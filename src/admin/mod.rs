@@ -58,3 +58,25 @@ pub fn edit(
     )
 }
 
+pub(super) fn customer_mut<'a>(state: &'a mut State, name: &str) -> Result<&'a mut Customer> {
+    state
+        .config
+        .customers
+        .get_mut(name)
+        .with_context(|| format!("unknown customer {name}"))
+}
+pub(super) fn prefixes(values: Vec<String>) -> Vec<String> {
+    values
+        .into_iter()
+        .map(|v| v.trim_start_matches('+').to_owned())
+        .collect()
+}
+
+pub(super) fn read_stdin() -> Result<String> {
+    let mut text = String::new();
+    io::stdin().take(65537).read_to_string(&mut text)?;
+    if text.len() > 65536 {
+        bail!("credential input exceeds 64 KiB");
+    }
+    Ok(text)
+}
