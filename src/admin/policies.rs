@@ -41,3 +41,24 @@ pub fn server(layout: &Layout, options: ServerOptions, json: bool) -> Result<()>
         if let Some(value) = options.sip_port {
             server.sip_port = value;
         }
+        if let Some(value) = options.rtp_start {
+            server.rtp_start = value;
+        }
+        if let Some(value) = options.rtp_end {
+            server.rtp_end = value;
+        }
+        if let Some(value) = options.dial_timeout {
+            server.dial_timeout = value;
+        }
+        if let Some(value) = options.max_calls_per_number {
+            server.max_calls_per_number = value;
+        }
+        if let Some(value) = options.manage_fail2ban {
+            server.manage_fail2ban = value;
+        }
+        if let Some(value) = options.cdr_database {
+            server.cdr_database = value;
+        }
+        Ok(())
+    })
+}
