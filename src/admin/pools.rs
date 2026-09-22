@@ -42,3 +42,26 @@ pub fn pool(layout: &Layout, command: PoolCommand, json: bool) -> Result<()> {
                         if !pool.numbers.contains(&number) {
                             pool.numbers.push(number);
                         }
+                    }
+                }
+                PoolCommand::Import { name, file } => {
+                    let text = fs::read_to_string(file)?;
+                    let mut numbers: Vec<String> = text
+                        .lines()
+                        .map(|s| s.split('#').next().unwrap_or("").trim())
+                        .filter(|s| !s.is_empty())
+                        .map(str::to_owned)
+                        .collect();
+                    numbers.sort();
+                    numbers.dedup();
+                    state.config.pools.insert(name, Pool { numbers });
+                }
+                PoolCommand::Remove { name, numbers, yes } => {
+                    if numbers.is_empty() {
+                        ensure!(yes, "deleting a pool requires --yes");
+                        state.config.pools.remove(&name).context("unknown pool")?;
+                    } else {
+                        let pool = state.config.pools.get_mut(&name).context("unknown pool")?;
+                        ensure!(
+                            numbers.iter().all(|n| pool.numbers.contains(n)),
+                            "one or more numbers are not in this pool"
