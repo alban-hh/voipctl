@@ -20,3 +20,25 @@ pub fn trunk(layout: &Layout, command: TrunkCommand, json: bool) -> Result<()> {
             json,
         ),
         other => edit(layout, json, |state| {
+            match other {
+                TrunkCommand::Add {
+                    name,
+                    host,
+                    port,
+                    max_calls,
+                    signaling,
+                    media,
+                } => {
+                    ensure!(
+                        !state.config.trunks.contains_key(&name),
+                        "trunk already exists"
+                    );
+                    state.config.trunks.insert(
+                        name,
+                        Trunk {
+                            host,
+                            port,
+                            max_calls,
+                            signaling,
+                            media,
+                        },
