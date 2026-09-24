@@ -58,21 +58,60 @@ pub fn asterisk(query: &str) -> Result<String> {
 
 pub struct LiveServices<'a> {
     pub layout: &'a Layout,
-    pub state: &'a State,
     pub restart: bool,
     pub manage_fail2ban: bool,
 }
 
 impl<'a> LiveServices<'a> {
-    pub fn new(layout: &'a Layout, state: &'a State, restart: bool) -> Result<Self> {
+    pub fn new(layout: &'a Layout, state: &State, restart: bool) -> Result<Self> {
         let old = fs::read_to_string(layout.path("etc/fail2ban/jail.d/voipctl.conf")?)
             .unwrap_or_default();
         Ok(Self {
             layout,
-            state,
             restart,
             manage_fail2ban: state.config.server.manage_fail2ban || old.contains("enabled=true"),
         })
+    }
+
+    pub fn recovery(layout: &'a Layout, restart: bool) -> Result<Self> {
+        ensure!(
+            !layout.live() || cfg!(target_os = "linux"),
+            "live recovery requires Linux"
+        );
+        let old = fs::read_to_string(layout.path("etc/fail2ban/jail.d/voipctl.conf")?)
+            .unwrap_or_default();
+        Ok(Self {
+            layout,
+            restart,
+            manage_fail2ban: old.contains("enabled=true"),
+        })
+    }
+
+    pub fn prepare_recovery(&self) -> Result<()> {
+        ensure!(self.restart, "recovery requires a controlled restart");
+        self.ensure_restart_safe()
+    }
+
+    fn ensure_restart_safe(&self) -> Result<()> {
+        let status = command(
+            "/usr/bin/systemctl",
+            &["show", "--property=ActiveState", "--value", "asterisk"],
+        )?;
+        if matches!(status.trim(), "inactive" | "failed") {
+            return Ok(());
+        }
+        ensure!(
+            status.trim() == "active",
+            "Asterisk is changing state; retry after it settles"
+        );
+        let channels = asterisk("core show channels count")?;
+        ensure!(
+            channels
+                .lines()
+                .any(|line| line.trim() == "0 active channels"),
+            "restart refused while calls or channels are active"
+        );
+        Ok(())
     }
 
     fn active(&self, service: &str) -> Result<()> {
@@ -120,18 +159,22 @@ impl Activator for LiveServices<'_> {
             .find(|a| a.path == "etc/asterisk/pjsip.conf")
             .context("missing PJSIP output")?
             .content;
+        let mut restart_needed = transport(&old) != transport(new);
+        for artifact in artifacts.iter().filter(|a| {
+            matches!(
+                a.path.as_str(),
+                "etc/asterisk/rtp.conf" | "etc/asterisk/manager.conf" | "etc/asterisk/http.conf"
+            )
+        }) {
+            let old = fs::read_to_string(self.layout.path(&artifact.path)?).unwrap_or_default();
+            restart_needed |= old != artifact.content;
+        }
         ensure!(
-            self.restart || transport(&old) == transport(new),
-            "transport configuration changed; inspect plan and use apply --restart during a maintenance window"
+            self.restart || !restart_needed,
+            "transport, RTP, or service configuration changed; inspect plan and use apply --restart during a maintenance window"
         );
         if self.restart {
-            let channels = asterisk("core show channels count")?;
-            ensure!(
-                channels
-                    .lines()
-                    .any(|line| line.trim() == "0 active channels"),
-                "restart refused while calls or channels are active"
-            );
+            self.ensure_restart_safe()?;
         }
         if self.manage_fail2ban {
             self.active("fail2ban")?;
@@ -141,12 +184,17 @@ impl Activator for LiveServices<'_> {
 
     fn activate(&mut self) -> Result<()> {
         if self.restart {
+            self.ensure_restart_safe()?;
             command("/usr/bin/systemctl", &["restart", "asterisk"])?;
         } else {
             for query in ["pjsip reload", "dialplan reload", "logger reload"] {
                 asterisk(query)?;
             }
         }
+        let configuration =
+            fs::read_to_string(self.layout.path("etc/fail2ban/jail.d/voipctl.conf")?)
+                .unwrap_or_default();
+        self.manage_fail2ban |= configuration.contains("enabled=true");
         if self.manage_fail2ban {
             command("/usr/bin/fail2ban-client", &["-t"])?;
             command("/usr/bin/systemctl", &["restart", "fail2ban"])?;
