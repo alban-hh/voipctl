@@ -1,6 +1,3 @@
-pub fn version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
-}
 pub mod admin;
 pub mod app;
 pub mod cli;
