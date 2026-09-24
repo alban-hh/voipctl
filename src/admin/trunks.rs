@@ -86,3 +86,25 @@ pub fn trunk(layout: &Layout, command: TrunkCommand, json: bool) -> Result<()> {
                             io::stdin().is_terminal(),
                             "use --stdin for noninteractive credentials"
                         );
+                        let username = rpassword::prompt_password("SIP username: ")?;
+                        let password = rpassword::prompt_password("SIP password: ")?;
+                        let confirm = rpassword::prompt_password("Repeat password: ")?;
+                        ensure!(password == confirm, "passwords do not match");
+                        Credentials { username, password }
+                    };
+                    state.secrets.trunks.insert(name, credentials);
+                }
+                TrunkCommand::Remove { name, .. } => {
+                    ensure!(
+                        !state.config.customers.values().any(|c| c.trunk == name),
+                        "trunk is assigned to a customer"
+                    );
+                    state.config.trunks.remove(&name).context("unknown trunk")?;
+                    state.secrets.trunks.remove(&name);
+                }
+                _ => unreachable!(),
+            }
+            Ok(())
+        }),
+    }
+}
