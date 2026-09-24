@@ -64,3 +64,25 @@ pub fn trunk(layout: &Layout, command: TrunkCommand, json: bool) -> Result<()> {
                         trunk.port = value;
                     }
                     if let Some(value) = max_calls {
+                        trunk.max_calls = value;
+                    }
+                    if let Some(value) = signaling {
+                        trunk.signaling = value;
+                    }
+                    if let Some(value) = media {
+                        trunk.media = value;
+                    }
+                }
+                TrunkCommand::Credentials { name, stdin } => {
+                    ensure!(state.config.trunks.contains_key(&name), "unknown trunk");
+                    let credentials = if stdin {
+                        serde_json::from_str::<Credentials>(&read_stdin()?).map_err(|_| {
+                            anyhow::anyhow!(
+                                "expected JSON with username and password; values omitted"
+                            )
+                        })?
+                    } else {
+                        ensure!(
+                            io::stdin().is_terminal(),
+                            "use --stdin for noninteractive credentials"
+                        );
