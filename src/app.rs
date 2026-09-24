@@ -90,8 +90,12 @@ pub fn run(cli: Cli) -> Result<()> {
         Command::Recover { restart } => {
             let _lock = layout.lock()?;
             if layout.live() {
-                let state = layout.load()?;
-                let mut services = LiveServices::new(&layout, &state, restart)?;
+                ensure!(
+                    restart,
+                    "live recovery requires --restart during a maintenance window"
+                );
+                let mut services = LiveServices::recovery(&layout, restart)?;
+                services.prepare_recovery()?;
                 transaction::recover(&layout, &mut services)?;
             } else {
                 transaction::recover(&layout, &mut Offline)?;
@@ -122,9 +126,8 @@ pub fn run(cli: Cli) -> Result<()> {
                     restart,
                     "live rollback requires --restart in a maintenance window"
                 );
-                let state = layout.load()?;
-                let mut services = LiveServices::new(&layout, &state, true)?;
-                services.preflight(&render::generate(&state)?)?;
+                let mut services = LiveServices::recovery(&layout, true)?;
+                services.prepare_recovery()?;
                 transaction::rollback(&layout, &id, &mut services)?
             } else {
                 transaction::rollback(&layout, &id, &mut Offline)?
