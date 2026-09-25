@@ -20,3 +20,24 @@ fn configured_state() -> State {
             password: new_password(),
         },
     );
+    state.config.pools.insert(
+        "us".into(),
+        Pool {
+            numbers: vec!["+12025550100".into(), "+12025550101".into()],
+        },
+    );
+    state.config.customers.insert(
+        "main".into(),
+        Customer {
+            trunk: "carrier".into(),
+            allowed_prefixes: vec!["355".into()],
+            default_country: Some("355".into()),
+            max_calls: 2,
+            max_call_seconds: 3600,
+            source_ips: vec!["203.0.113.1/32".parse().unwrap()],
+            extensions: BTreeMap::from([(
+                "101".into(),
+                Extension {
+                    caller_id: "+16135550100".into(),
+                    alternate_caller_id: Some("pool:us".into()),
+                },
