@@ -41,3 +41,26 @@ fn migration_preserves_credentials_and_calling_policies() {
     assert_eq!(state.secrets.extensions["101"], password);
     assert_eq!(state.secrets.trunks["telnyx"].password, password);
     assert_eq!(state.config.customers["main"].max_calls, 2);
+    assert_eq!(
+        state.config.customers["main"].default_country.as_deref(),
+        Some("355")
+    );
+    assert_eq!(
+        state.config.customers["main"].source_ips[0].to_string(),
+        "203.0.113.2/32"
+    );
+    assert_eq!(
+        state.config.customers["main"].extensions["101"]
+            .alternate_caller_id
+            .as_deref(),
+        Some("pool:us")
+    );
+    assert_eq!(state.config.pools["us"].numbers.len(), 2);
+    assert_eq!(
+        fs::read(directory.path().join("customers/main.conf")).unwrap(),
+        original
+    );
+    state.validate_activation().unwrap();
+    render::generate(&state).unwrap();
+}
+
