@@ -64,3 +64,26 @@ fn migration_preserves_credentials_and_calling_policies() {
     render::generate(&state).unwrap();
 }
 
+#[test]
+fn malformed_legacy_configuration_is_rejected() {
+    let (directory, _) = legacy_fixture();
+    fs::write(
+        directory.path().join("customers/main.conf"),
+        "[customer]\nmax_calls=0\n",
+    )
+    .unwrap();
+    assert!(migrate::legacy(directory.path(), "pbx.example.com".into()).is_err());
+}
+
+#[test]
+fn duplicate_sections_and_duplicate_keys_are_rejected() {
+    for content in [
+        "[customer]\n[customer]\n",
+        "[customer]\nmax_calls=2\nmax_calls=3\n",
+    ] {
+        let (directory, _) = legacy_fixture();
+        fs::write(directory.path().join("customers/main.conf"), content).unwrap();
+        assert!(migrate::legacy(directory.path(), "pbx.example.com".into()).is_err());
+    }
+}
+
