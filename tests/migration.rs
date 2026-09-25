@@ -87,3 +87,21 @@ fn duplicate_sections_and_duplicate_keys_are_rejected() {
     }
 }
 
+#[test]
+fn missing_trunk_credentials_can_be_imported_but_not_activated() {
+    let (directory, _) = legacy_fixture();
+    fs::remove_file(directory.path().join("secrets/telnyx.conf")).unwrap();
+    let state = migrate::legacy(directory.path(), "pbx.example.com".into()).unwrap();
+    assert!(state.validate_activation().is_err());
+}
+
+#[test]
+fn orphaned_legacy_customer_locks_are_rejected() {
+    let (directory, _) = legacy_fixture();
+    fs::write(
+        directory.path().join("whitelist.conf"),
+        "203.0.113.1 customer:missing\n",
+    )
+    .unwrap();
+    assert!(migrate::legacy(directory.path(), "pbx.example.com".into()).is_err());
+}
