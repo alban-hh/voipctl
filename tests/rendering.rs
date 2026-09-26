@@ -41,3 +41,22 @@ fn configured_state() -> State {
                     caller_id: "+16135550100".into(),
                     alternate_caller_id: Some("pool:us".into()),
                 },
+            )]),
+        },
+    );
+    state
+        .secrets
+        .extensions
+        .insert("101".into(), new_password());
+    state
+}
+
+fn rendered(state: &State, name: &str) -> String {
+    render::generate(state)
+        .unwrap()
+        .into_iter()
+        .find(|f| f.path == format!("etc/asterisk/{name}"))
+        .unwrap()
+        .content
+}
+
