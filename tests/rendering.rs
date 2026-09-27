@@ -60,3 +60,24 @@ fn rendered(state: &State, name: &str) -> String {
         .content
 }
 
+#[test]
+fn allocation_checks_and_reservations_share_one_lock() {
+    let text = rendered(&configured_state(), "extensions.conf");
+    let lock = text.find("${LOCK(voipctl-allocation)}").unwrap();
+    let check = text.find("GROUP_COUNT(main@voipctl-customer)").unwrap();
+    let reserve = text.find("Set(GROUP(voipctl-customer)=main)").unwrap();
+    let unlock = text.find("${UNLOCK(voipctl-allocation)}").unwrap();
+    let dial = text.find("Dial(PJSIP/").unwrap();
+    assert!(lock < check && check < reserve && reserve < unlock && unlock < dial);
+}
+
+#[test]
+fn busy_pool_candidates_advance_until_every_number_has_been_considered() {
+    let text = rendered(&configured_state(), "extensions.conf");
+    assert!(text.contains("GotoIf($[${ATTEMPTS} >= 2]?done)"));
+    assert!(text.contains("Set(INDEX=$[(${INDEX} + 1) % 2])"));
+    assert!(text.contains("Set(CID=+12025550100)"));
+    assert!(text.contains("Set(CID=+12025550101)"));
+    assert!(text.contains("GotoIf($[${AVAILABLE} != 1]?full)"));
+}
+
