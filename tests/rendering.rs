@@ -81,3 +81,25 @@ fn busy_pool_candidates_advance_until_every_number_has_been_considered() {
     assert!(text.contains("GotoIf($[${AVAILABLE} != 1]?full)"));
 }
 
+#[test]
+fn caller_id_limits_use_a_shared_category_and_accept_overrides() {
+    let mut state = configured_state();
+    state.config.server.max_calls_per_number = 3;
+    state
+        .config
+        .caller_id_limits
+        .insert("+12025550100".into(), 2);
+    let text = rendered(&state, "extensions.conf");
+    assert!(text.contains("Set(CID_LIMIT=3)"));
+    assert!(text.contains("ExecIf($[\"${CID}\" = \"+12025550100\"]?Set(CID_LIMIT=2))"));
+    assert!(text.contains("GROUP_COUNT(${CID:1}@voipctl-cid)"));
+    assert!(text.contains("Set(GROUP(voipctl-cid)=${CID:1})"));
+}
+
+#[test]
+fn nondefault_dial_timeout_renders_without_trailing_whitespace() {
+    let mut state = configured_state();
+    state.config.server.dial_timeout = 45;
+    assert!(rendered(&state, "extensions.conf").contains("Dial(PJSIP/${DEST}@trunk-carrier,45)\n"));
+}
+
