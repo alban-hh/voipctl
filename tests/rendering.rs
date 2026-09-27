@@ -148,3 +148,25 @@ fn fail2ban_uses_a_dedicated_jail_and_all_protocol_bans() {
         .unwrap();
     assert!(jail.content.starts_with("[voipctl-asterisk]\nenabled=true"));
     assert!(jail.content.contains("filter=asterisk"));
+    assert!(
+        jail.content
+            .contains("action=nftables[type=custom, blocktype=drop]")
+    );
+}
+
+#[test]
+fn disabling_managed_fail2ban_still_emits_an_explicit_disabled_jail() {
+    let files = render::generate(&configured_state()).unwrap();
+    let jail = files
+        .iter()
+        .find(|f| f.path.ends_with("jail.d/voipctl.conf"))
+        .unwrap();
+    assert_eq!(jail.content, "[voipctl-asterisk]\nenabled=false\n");
+}
+
+#[test]
+fn unconfigured_customer_trunks_cannot_generate_deployable_files() {
+    let mut state = configured_state();
+    state.secrets.trunks.clear();
+    assert!(render::generate(&state).is_err());
+}
