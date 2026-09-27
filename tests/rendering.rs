@@ -125,3 +125,26 @@ fn public_plan_never_contains_credential_material() {
     assert!(!output.contains(&state.secrets.trunks["carrier"].password));
 }
 
+#[test]
+fn endpoint_source_locks_and_inbound_rejection_are_rendered() {
+    let state = configured_state();
+    let pjsip = rendered(&state, "pjsip.conf");
+    assert!(pjsip.contains("deny=0.0.0.0/0\npermit=203.0.113.1/32"));
+    assert!(pjsip.contains("context=voipctl-inbound"));
+    assert!(pjsip.contains("allow_transfer=no"));
+    assert!(
+        rendered(&state, "extensions.conf").contains("[voipctl-inbound]\nexten => _.,1,Hangup(21)")
+    );
+}
+
+#[test]
+fn fail2ban_uses_a_dedicated_jail_and_all_protocol_bans() {
+    let mut state = configured_state();
+    state.config.server.manage_fail2ban = true;
+    let files = render::generate(&state).unwrap();
+    let jail = files
+        .iter()
+        .find(|f| f.path.ends_with("jail.d/voipctl.conf"))
+        .unwrap();
+    assert!(jail.content.starts_with("[voipctl-asterisk]\nenabled=true"));
+    assert!(jail.content.contains("filter=asterisk"));
