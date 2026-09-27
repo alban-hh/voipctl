@@ -103,3 +103,25 @@ fn nondefault_dial_timeout_renders_without_trailing_whitespace() {
     assert!(rendered(&state, "extensions.conf").contains("Dial(PJSIP/${DEST}@trunk-carrier,45)\n"));
 }
 
+#[test]
+fn invalid_destinations_are_rejected_before_resources_are_reserved() {
+    let text = rendered(&configured_state(), "extensions.conf");
+    let normalize = text.find("^[1-9][0-9]{6,14}$").unwrap();
+    let policy = text
+        .find("GotoIf($[\"${NUM:0:3}\" = \"355\"]?allocate)")
+        .unwrap();
+    let lock = text.find("${LOCK(voipctl-allocation)}").unwrap();
+    assert!(normalize < policy && policy < lock);
+}
+
+#[test]
+fn public_plan_never_contains_credential_material() {
+    let state = configured_state();
+    let root = tempfile::tempdir().unwrap();
+    let layout = Layout::new(root.path().to_owned()).unwrap();
+    let changes = transaction::plan(&layout, &render::generate(&state).unwrap()).unwrap();
+    let output = serde_json::to_string(&changes).unwrap();
+    assert!(!output.contains(&state.secrets.extensions["101"]));
+    assert!(!output.contains(&state.secrets.trunks["carrier"].password));
+}
+
