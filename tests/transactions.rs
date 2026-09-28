@@ -164,3 +164,104 @@ fn concurrent_writers_cannot_acquire_the_same_lock() {
     drop(lock);
     assert!(layout.lock().is_ok());
 }
+
+#[test]
+fn rollback_can_be_undone_without_reverting_desired_configuration() {
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let _lock = layout.lock().unwrap();
+    layout.save(&State::default()).unwrap();
+    let desired = fs::read(layout.state_path().unwrap()).unwrap();
+    transaction::apply(&layout, &[artifact("before")], false, &mut Offline).unwrap();
+    let checkpoint =
+        transaction::apply(&layout, &[artifact("after")], false, &mut Offline).unwrap();
+    let undo = transaction::rollback(&layout, &checkpoint, &mut Offline).unwrap();
+    assert_eq!(
+        fs::read_to_string(layout.path("etc/asterisk/pjsip.conf").unwrap()).unwrap(),
+        "before"
+    );
+    transaction::rollback(&layout, &undo, &mut Offline).unwrap();
+    assert_eq!(
+        fs::read_to_string(layout.path("etc/asterisk/pjsip.conf").unwrap()).unwrap(),
+        "after"
+    );
+    assert_eq!(fs::read(layout.state_path().unwrap()).unwrap(), desired);
+}
+
+#[test]
+fn failed_manual_rollback_restores_the_current_files() {
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let _lock = layout.lock().unwrap();
+    transaction::apply(&layout, &[artifact("before")], false, &mut Offline).unwrap();
+    let checkpoint =
+        transaction::apply(&layout, &[artifact("after")], false, &mut Offline).unwrap();
+    let mut faults = Faults {
+        remaining: 1,
+        activations: 0,
+    };
+    assert!(transaction::rollback(&layout, &checkpoint, &mut faults).is_err());
+    assert_eq!(
+        fs::read_to_string(layout.path("etc/asterisk/pjsip.conf").unwrap()).unwrap(),
+        "after"
+    );
+    assert!(
+        !layout
+            .path("var/lib/voipctl/pending.json")
+            .unwrap()
+            .exists()
+    );
+}
+
+#[test]
+fn checkpoints_and_journals_are_private() {
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let _lock = layout.lock().unwrap();
+    let checkpoint =
+        transaction::apply(&layout, &[artifact("private")], false, &mut Offline).unwrap();
+    let backup = layout
+        .path(&format!("var/lib/voipctl/history/{checkpoint}.json"))
+        .unwrap();
+    assert_eq!(
+        fs::metadata(backup).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+}
+
+#[test]
+fn verification_failure_triggers_recovery() {
+    struct VerificationFailure(bool);
+    impl Activator for VerificationFailure {
+        fn preflight(&mut self, _: &[Artifact]) -> Result<()> {
+            Ok(())
+        }
+        fn activate(&mut self) -> Result<()> {
+            Ok(())
+        }
+        fn verify(&mut self) -> Result<()> {
+            if self.0 {
+                self.0 = false;
+                bail!("verification failed");
+            }
+            Ok(())
+        }
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let layout = Layout::new(dir.path().to_owned()).unwrap();
+    let _lock = layout.lock().unwrap();
+    transaction::apply(&layout, &[artifact("before")], false, &mut Offline).unwrap();
+    assert!(
+        transaction::apply(
+            &layout,
+            &[artifact("after")],
+            false,
+            &mut VerificationFailure(true)
+        )
+        .is_err()
+    );
+    assert_eq!(
+        fs::read_to_string(layout.path("etc/asterisk/pjsip.conf").unwrap()).unwrap(),
+        "before"
+    );
+}
