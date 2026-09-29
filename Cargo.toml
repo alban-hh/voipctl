@@ -6,9 +6,10 @@ rust-version = "1.88"
 description = "Declarative outbound Asterisk administration from the command line"
 license = "MIT"
 readme = "README.md"
+repository = "https://github.com/alban-hh/voipctl"
 keywords = ["asterisk", "voip", "sip", "cli"]
 categories = ["command-line-utilities", "config"]
-exclude = ["voipctl", ".github", "docs"]
+exclude = [".github"]
 
 [dependencies]
 anyhow = "1"
@@ -35,4 +36,3 @@ unsafe_code = "forbid"
 
 [lints.clippy]
 all = "warn"
-
