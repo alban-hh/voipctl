@@ -12,15 +12,15 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             toolchain: stable
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             toolchain: '1.88.0'
           - os: macos-latest
             toolchain: stable
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - run: rustup toolchain install ${{ matrix.toolchain }} --profile minimal --component rustfmt --component clippy
