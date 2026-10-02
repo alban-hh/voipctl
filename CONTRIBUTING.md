@@ -6,6 +6,8 @@ Open an issue describing the operator problem before proposing a significant fea
 cargo fmt --all -- --check
 cargo clippy --locked --all-targets -- -D warnings
 cargo test --locked
+sh -n scripts/install.sh tests/installer.sh
+sh tests/installer.sh
 ```
 
 Use descriptive types, names, and small modules. Keep source code free of comments; document behavior in tests and operator documentation. New failure paths need regression tests, especially around state changes, activation, and recovery.
