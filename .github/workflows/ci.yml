@@ -23,6 +23,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - run: sh -n scripts/install.sh tests/installer.sh
+      - run: sh tests/installer.sh
       - run: rustup toolchain install ${{ matrix.toolchain }} --profile minimal --component rustfmt --component clippy
       - if: matrix.toolchain == 'stable'
         run: cargo +${{ matrix.toolchain }} fmt --all -- --check
