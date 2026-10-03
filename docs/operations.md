@@ -54,4 +54,4 @@ Managed fail2ban is opt-in: `server --manage-fail2ban true`. It requires an inst
 
 The root-only state is `/etc/voipctl/state.toml`. Root-only checkpoints are under `/var/lib/voipctl/history`; back them up securely and manage retention. Checkpoints can contain credentials. Never add either directory to Git.
 
-`cdr --today --summary` queries an existing `asteriskcdr.cdr` table through local MariaDB authentication. The detailed view expects `id`, `calldate`, `accountcode`, `customer_ext`, `src`, `dialed`, `disposition`, `billsec`, `src_ip`, and `userfield`. Existing ODBC/CDR configuration is retained; schema provisioning is outside this release.
+`cdr --today --summary` queries an existing `asteriskcdr.cdr` table through local MariaDB authentication. Existing ODBC/CDR configuration is retained. An optional schema and connection requirements are described in [Call records](cdr.md).
