@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/alban-hh/voipctl/actions/workflows/ci.yml/badge.svg)](https://github.com/alban-hh/voipctl/actions/workflows/ci.yml)
 [![Rust](https://img.shields.io/badge/Rust-1.88%2B-000000?logo=rust)](https://www.rust-lang.org/)
+[![Platform](https://img.shields.io/badge/Linux-Asterisk%2022-2496ED?logo=linux&logoColor=white)](docs/operations.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **CLI-first administration for outbound Asterisk servers.**
@@ -25,8 +26,10 @@ Requires Rust 1.88 or newer to build. Live administration targets Linux, systemd
 git clone https://github.com/alban-hh/voipctl.git
 cd voipctl
 cargo build --release --locked
-sudo install -m 0755 target/release/voipctl /usr/local/sbin/voipctl
+sudo sh scripts/install.sh
 ```
+
+The installer replaces only the binary. Use `--prefix /opt/voipctl` to change its location or `--destdir /absolute/staging` to prepare a package tree.
 
 ## Start offline
 
@@ -38,16 +41,17 @@ voipctl --root "$voipctl_root" --help
 
 Changes are staged until `apply`. A custom `--root` never activates system services.
 
-[Operations](docs/operations.md) · [Migration](docs/migration.md) · [Design](docs/design.md) · [Contributing](CONTRIBUTING.md)
+[Operations](docs/operations.md) · [Migration](docs/migration.md) · [Call records](docs/cdr.md) · [Design](docs/design.md) · [Contributing](CONTRIBUTING.md)
 
 ## Validation
 
 ```sh
 cargo test --locked
 cargo clippy --locked --all-targets -- -D warnings
+sh tests/installer.sh
 ```
 
-Pre-1.0 software. Validation currently covers Rust unit tests with temporary files and simulated services. Live Asterisk behavior and carrier interoperability have not been verified for this release.
+Pre-1.0 software. Validation covers Rust and Shell unit tests with temporary files and simulated services. Live Asterisk behavior, database integration, and carrier interoperability have not been verified for this release.
 
 voipctl manages configuration for a dedicated outbound server. It does not install Asterisk, provision a carrier account, manage cloud firewall rules, or provide billing.
 
